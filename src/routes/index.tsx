@@ -20,7 +20,7 @@ function Landing() {
         <Logo />
         <nav className="flex items-center gap-2">
           <Link to="/login" className="px-4 py-2 text-sm font-medium text-foreground/80 hover:text-foreground rounded-xl transition">Sign in</Link>
-          <Link to="/signup" className="px-4 py-2 text-sm font-medium bg-foreground text-background rounded-xl hover:bg-foreground/90 transition">Get started</Link>
+          <Link to="/login" className="px-4 py-2 text-sm font-medium bg-foreground text-background rounded-xl hover:bg-foreground/90 transition">Get started</Link>
         </nav>
       </header>
 
@@ -38,7 +38,7 @@ function Landing() {
               Aurora classifies, prioritizes, and routes every employee request automatically — so your operations team focuses on resolution, not triage.
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
-              <Link to="/signup" className="group inline-flex items-center gap-2 bg-gradient-primary text-primary-foreground rounded-2xl px-6 py-3.5 text-sm font-semibold shadow-glow hover:scale-[1.02] transition-transform">
+              <Link to="/login" className="group inline-flex items-center gap-2 bg-gradient-primary text-primary-foreground rounded-2xl px-6 py-3.5 text-sm font-semibold shadow-glow hover:scale-[1.02] transition-transform">
                 Submit a request <ArrowRight className="h-4 w-4 group-hover:translate-x-0.5 transition" />
               </Link>
               <Link to="/login" className="inline-flex items-center gap-2 glass rounded-2xl px-6 py-3.5 text-sm font-semibold hover:bg-card transition">
@@ -120,7 +120,7 @@ function Landing() {
           <ShieldCheck className="h-10 w-10 text-primary mx-auto" />
           <h2 className="mt-4 font-display text-3xl md:text-4xl font-bold tracking-tight">Built for serious operations teams.</h2>
           <p className="mt-3 text-muted-foreground max-w-xl mx-auto">Role-based access, audit-ready ticket history, and graceful fallback when AI services are unavailable.</p>
-          <Link to="/signup" className="mt-8 inline-flex items-center gap-2 bg-gradient-primary text-primary-foreground rounded-2xl px-7 py-3.5 text-sm font-semibold shadow-glow">
+          <Link to="/login" className="mt-8 inline-flex items-center gap-2 bg-gradient-primary text-primary-foreground rounded-2xl px-7 py-3.5 text-sm font-semibold shadow-glow">
             Start free <ArrowRight className="h-4 w-4" />
           </Link>
         </section>

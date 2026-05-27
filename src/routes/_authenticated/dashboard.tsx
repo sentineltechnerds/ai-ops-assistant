@@ -28,31 +28,37 @@ const statusColors: Record<string, string> = {
 const CHART_COLORS = ["oklch(0.55 0.14 280)", "oklch(0.74 0.09 285)", "oklch(0.78 0.16 70)", "oklch(0.7 0.14 160)"];
 
 function Dashboard() {
-  const { role } = useAuth();
-  const isAdmin = role === "admin";
+  const { role, department } = useAuth();
+  const isSuper = role === "super_admin";
+  const isDeptAdmin = role === "department_admin";
+  const isAdmin = isSuper || isDeptAdmin;
   const fn = useServerFn(isAdmin ? listAllTickets : listMyTickets);
   const updateFn = useServerFn(updateTicketStatus);
   const { data, isLoading, refetch } = useQuery({
-    queryKey: ["tickets", isAdmin],
+    queryKey: ["tickets", role, department],
     queryFn: () => fn(),
   });
 
-  const tickets = data?.tickets ?? [];
+  const allTickets = data?.tickets ?? [];
+  // Department admin: scope client-side too (RLS already enforces it)
+  const tickets = isDeptAdmin && department
+    ? allTickets.filter(t => t.department === department)
+    : allTickets;
+
   const stats = {
     total: tickets.length,
-    HR: tickets.filter(t => t.predicted_category === "HR").length,
-    IT: tickets.filter(t => t.predicted_category === "IT").length,
-    Finance: tickets.filter(t => t.predicted_category === "Finance").length,
-    Operations: tickets.filter(t => t.predicted_category === "Operations").length,
+    HR: tickets.filter(t => t.predicted_category === "HR" || t.department === "HR").length,
+    IT: tickets.filter(t => t.predicted_category === "IT" || t.department === "IT").length,
+    Finance: tickets.filter(t => t.predicted_category === "Finance" || t.department === "Finance").length,
     critical: tickets.filter(t => t.priority === "critical").length,
     resolved: tickets.filter(t => t.status === "resolved").length,
+    escalated: tickets.filter(t => t.status === "escalated").length,
   };
 
   const catData = [
     { name: "HR", value: stats.HR },
     { name: "IT", value: stats.IT },
     { name: "Finance", value: stats.Finance },
-    { name: "Operations", value: stats.Operations },
   ];
 
   const sorted = [...tickets].sort((a, b) => {
@@ -73,8 +79,8 @@ function Dashboard() {
     { label: "HR", value: stats.HR, icon: Users, color: "text-accent-foreground" },
     { label: "IT", value: stats.IT, icon: Cpu, color: "text-primary" },
     { label: "Finance", value: stats.Finance, icon: DollarSign, color: "text-warning" },
-    { label: "Operations", value: stats.Operations, icon: Wrench, color: "text-accent-foreground" },
     { label: "Critical", value: stats.critical, icon: AlertTriangle, color: "text-critical" },
+    { label: "Escalated", value: stats.escalated, icon: Wrench, color: "text-warning" },
     { label: "Resolved", value: stats.resolved, icon: CheckCircle2, color: "text-success" },
   ];
 

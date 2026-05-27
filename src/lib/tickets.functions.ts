@@ -3,10 +3,9 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 const KEYWORDS: Record<string, string[]> = {
-  HR: ["leave", "salary", "recruit", "benefit", "onboard", "payroll", "employee", "resign", "hr", "holiday"],
-  IT: ["laptop", "password", "email", "software", "vpn", "internet", "network", "server", "access", "login", "wifi", "computer"],
-  Finance: ["invoice", "reimburse", "payment", "budget", "supplier", "purchase", "expense", "claim", "finance", "accounting"],
-  Operations: ["maintenance", "facility", "office", "transport", "supplies", "equipment", "security", "air conditioning", "projector", "boardroom", "cleaning"],
+  HR: ["leave", "salary", "recruit", "benefit", "onboard", "payroll", "employee", "resign", "hr", "holiday", "vacation"],
+  IT: ["laptop", "password", "email", "software", "vpn", "internet", "network", "server", "access", "login", "wifi", "computer", "outage", "system down"],
+  Finance: ["invoice", "reimburse", "payment", "budget", "supplier", "purchase", "expense", "claim", "finance", "accounting", "refund"],
 };
 
 const CRITICAL_WORDS = ["server down", "offline", "outage", "cannot access payroll", "system down", "critical", "urgent", "emergency", "breach"];
@@ -15,11 +14,11 @@ const LOW_WORDS = ["request", "supplies", "schedule", "info"];
 
 function keywordClassify(title: string, description: string) {
   const text = `${title} ${description}`.toLowerCase();
-  const scores: Record<string, number> = { HR: 0, IT: 0, Finance: 0, Operations: 0 };
+  const scores: Record<string, number> = { HR: 0, IT: 0, Finance: 0 };
   for (const [cat, words] of Object.entries(KEYWORDS)) {
     for (const w of words) if (text.includes(w)) scores[cat]++;
   }
-  let best: "HR" | "IT" | "Finance" | "Operations" = "Operations";
+  let best: "HR" | "IT" | "Finance" = "IT";
   let max = 0;
   for (const [cat, s] of Object.entries(scores)) {
     if (s > max) { max = s; best = cat as typeof best; }
@@ -61,7 +60,7 @@ async function aiClassify(title: string, description: string) {
             parameters: {
               type: "object",
               properties: {
-                category: { type: "string", enum: ["HR", "IT", "Finance", "Operations"] },
+                category: { type: "string", enum: ["HR", "IT", "Finance"] },
                 priority: { type: "string", enum: ["low", "medium", "high", "critical"] },
                 confidence: { type: "number", description: "0 to 1" },
                 summary: { type: "string", description: "1-2 sentence summary for ops manager" },
@@ -84,7 +83,7 @@ async function aiClassify(title: string, description: string) {
     if (!args) return keywordClassify(title, description);
     const parsed = JSON.parse(args);
     return {
-      category: parsed.category as "HR" | "IT" | "Finance" | "Operations",
+      category: parsed.category as "HR" | "IT" | "Finance",
       priority: parsed.priority as "low" | "medium" | "high" | "critical",
       confidence: Number(parsed.confidence) || 0.75,
       summary: String(parsed.summary || "").slice(0, 300),

@@ -18,15 +18,20 @@ function Submit() {
   const fn = useServerFn(submitTicket);
   const nav = useNavigate();
   const { user } = useAuth();
-  const [profile, setProfile] = useState({ name: "", dept: "Operations" });
+  const [profile, setProfile] = useState({ name: "", dept: "IT" as "HR" | "IT" | "Finance" });
   const [form, setForm] = useState<{ title: string; description: string; priority: "low" | "medium" | "high" | "critical" }>({ title: "", description: "", priority: "medium" });
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<any>(null);
 
   useEffect(() => {
     if (user) supabase.from("profiles").select("full_name, department").eq("id", user.id).maybeSingle()
-      .then(({ data }) => data && setProfile({ name: data.full_name || user.email || "", dept: data.department || "Operations" }));
+      .then(({ data }) => {
+        if (!data) return;
+        const d = (["HR","IT","Finance"].includes(data.department) ? data.department : "IT") as "HR"|"IT"|"Finance";
+        setProfile({ name: data.full_name || user.email || "", dept: d });
+      });
   }, [user]);
+
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -74,7 +79,7 @@ function Submit() {
       <form onSubmit={submit} className="mt-6 glass rounded-3xl p-7 space-y-4">
         <div className="grid grid-cols-2 gap-3">
           <Field label="Employee Name"><input required value={profile.name} onChange={e => setProfile({ ...profile, name: e.target.value })} className="input" /></Field>
-          <Field label="Department"><input required value={profile.dept} onChange={e => setProfile({ ...profile, dept: e.target.value })} className="input" /></Field>
+          <Field label="Department"><select required value={profile.dept} onChange={e => setProfile({ ...profile, dept: e.target.value as "HR"|"IT"|"Finance" })} className="input">{["HR","IT","Finance"].map(d => <option key={d}>{d}</option>)}</select></Field>
         </div>
         <Field label="Request Title">
           <input required maxLength={150} value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} className="input" placeholder="e.g. VPN connection failing" />
