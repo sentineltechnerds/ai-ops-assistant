@@ -14,11 +14,11 @@ const LOW_WORDS = ["request", "supplies", "schedule", "info"];
 
 function keywordClassify(title: string, description: string) {
   const text = `${title} ${description}`.toLowerCase();
-  const scores: Record<string, number> = { HR: 0, IT: 0, Finance: 0, Operations: 0 };
+  const scores: Record<string, number> = { HR: 0, IT: 0, Finance: 0 };
   for (const [cat, words] of Object.entries(KEYWORDS)) {
     for (const w of words) if (text.includes(w)) scores[cat]++;
   }
-  let best: "HR" | "IT" | "Finance" | "Operations" = "Operations";
+  let best: "HR" | "IT" | "Finance" = "IT";
   let max = 0;
   for (const [cat, s] of Object.entries(scores)) {
     if (s > max) { max = s; best = cat as typeof best; }
