@@ -18,7 +18,7 @@ function Submit() {
   const fn = useServerFn(submitTicket);
   const nav = useNavigate();
   const { user } = useAuth();
-  const [profile, setProfile] = useState({ name: "", dept: "Operations" });
+  const [profile, setProfile] = useState({ name: "", dept: "IT" as "HR" | "IT" | "Finance" });
   const [form, setForm] = useState<{ title: string; description: string; priority: "low" | "medium" | "high" | "critical" }>({ title: "", description: "", priority: "medium" });
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<any>(null);
