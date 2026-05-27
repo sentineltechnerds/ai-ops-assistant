@@ -25,8 +25,13 @@ function Submit() {
 
   useEffect(() => {
     if (user) supabase.from("profiles").select("full_name, department").eq("id", user.id).maybeSingle()
-      .then(({ data }) => data && setProfile({ name: data.full_name || user.email || "", dept: data.department || "Operations" }));
+      .then(({ data }) => {
+        if (!data) return;
+        const d = (["HR","IT","Finance"].includes(data.department) ? data.department : "IT") as "HR"|"IT"|"Finance";
+        setProfile({ name: data.full_name || user.email || "", dept: d });
+      });
   }, [user]);
+
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
