@@ -60,7 +60,7 @@ async function aiClassify(title: string, description: string) {
             parameters: {
               type: "object",
               properties: {
-                category: { type: "string", enum: ["HR", "IT", "Finance", "Operations"] },
+                category: { type: "string", enum: ["HR", "IT", "Finance"] },
                 priority: { type: "string", enum: ["low", "medium", "high", "critical"] },
                 confidence: { type: "number", description: "0 to 1" },
                 summary: { type: "string", description: "1-2 sentence summary for ops manager" },
