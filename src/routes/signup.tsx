@@ -1,11 +1,10 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { motion } from "framer-motion";
 import { Eye, EyeOff, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Logo } from "@/components/Logo";
-import { useAuth } from "@/lib/auth-context";
 
 export const Route = createFileRoute("/signup")({
   head: () => ({ meta: [{ title: "Create account — Aurora" }] }),
@@ -14,12 +13,9 @@ export const Route = createFileRoute("/signup")({
 
 function Signup() {
   const nav = useNavigate();
-  const { session } = useAuth();
-  const [f, setF] = useState({ fullName: "", email: "", department: "Operations", password: "", confirm: "", role: "employee" });
+  const [f, setF] = useState({ fullName: "", email: "", department: "Operations", password: "", confirm: "" });
   const [show, setShow] = useState(false);
   const [loading, setLoading] = useState(false);
-
-  useEffect(() => { if (session) nav({ to: "/dashboard", replace: true }); }, [session, nav]);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -30,13 +26,19 @@ function Signup() {
       email: f.email,
       password: f.password,
       options: {
-        emailRedirectTo: `${window.location.origin}/dashboard`,
-        data: { full_name: f.fullName, department: f.department, role: f.role },
+        emailRedirectTo: `${window.location.origin}/login`,
+        data: { full_name: f.fullName, department: f.department, role: "employee" },
       },
     });
+    if (error) {
+      setLoading(false);
+      return toast.error(error.message);
+    }
+    // Sign out so the user explicitly logs in afterwards
+    await supabase.auth.signOut();
     setLoading(false);
-    if (error) return toast.error(error.message);
-    toast.success("Account created");
+    toast.success("Account created — please sign in");
+    nav({ to: "/login", replace: true });
   };
 
   return (
@@ -56,20 +58,11 @@ function Signup() {
                 <input required type={fl.type} value={(f as any)[fl.k]} onChange={e => setF({ ...f, [fl.k]: e.target.value })} className="mt-1.5 w-full rounded-xl bg-card border border-border px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
               </div>
             ))}
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Department</label>
-                <select value={f.department} onChange={e => setF({ ...f, department: e.target.value })} className="mt-1.5 w-full rounded-xl bg-card border border-border px-4 py-3 text-sm">
-                  {["Operations", "Engineering", "Sales", "Marketing", "HR", "Finance", "Design"].map(d => <option key={d}>{d}</option>)}
-                </select>
-              </div>
-              <div>
-                <label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Role</label>
-                <select value={f.role} onChange={e => setF({ ...f, role: e.target.value })} className="mt-1.5 w-full rounded-xl bg-card border border-border px-4 py-3 text-sm">
-                  <option value="employee">Employee</option>
-                  <option value="admin">Admin</option>
-                </select>
-              </div>
+            <div>
+              <label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Department</label>
+              <select value={f.department} onChange={e => setF({ ...f, department: e.target.value })} className="mt-1.5 w-full rounded-xl bg-card border border-border px-4 py-3 text-sm">
+                {["HR", "Finance", "IT", "Operations"].map(d => <option key={d}>{d}</option>)}
+              </select>
             </div>
             <div>
               <label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Password</label>
