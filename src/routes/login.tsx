@@ -62,7 +62,7 @@ function Login() {
           </form>
           <div className="my-4 flex items-center gap-3 text-xs text-muted-foreground"><div className="h-px flex-1 bg-border" />or<div className="h-px flex-1 bg-border" /></div>
           <button onClick={google} className="w-full glass rounded-xl py-3 text-sm font-medium hover:bg-card transition">Continue with Google</button>
-          <p className="mt-6 text-center text-xs text-muted-foreground">No account? <Link to="/signup" className="text-primary font-medium">Create one</Link></p>
+          <p className="mt-6 text-center text-xs text-muted-foreground">Accounts are provisioned by your administrator.</p>
         </div>
       </motion.div>
     </div>
