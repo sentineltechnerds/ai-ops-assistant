@@ -83,7 +83,7 @@ async function aiClassify(title: string, description: string) {
     if (!args) return keywordClassify(title, description);
     const parsed = JSON.parse(args);
     return {
-      category: parsed.category as "HR" | "IT" | "Finance" | "Operations",
+      category: parsed.category as "HR" | "IT" | "Finance",
       priority: parsed.priority as "low" | "medium" | "high" | "critical",
       confidence: Number(parsed.confidence) || 0.75,
       summary: String(parsed.summary || "").slice(0, 300),
