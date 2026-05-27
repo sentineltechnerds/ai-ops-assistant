@@ -19,7 +19,7 @@ function Submit() {
   const nav = useNavigate();
   const { user } = useAuth();
   const [profile, setProfile] = useState({ name: "", dept: "Operations" });
-  const [form, setForm] = useState({ title: "", description: "", priority: "medium" as const });
+  const [form, setForm] = useState<{ title: string; description: string; priority: "low" | "medium" | "high" | "critical" }>({ title: "", description: "", priority: "medium" });
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<any>(null);
 
