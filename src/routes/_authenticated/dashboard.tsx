@@ -79,8 +79,8 @@ function Dashboard() {
     { label: "HR", value: stats.HR, icon: Users, color: "text-accent-foreground" },
     { label: "IT", value: stats.IT, icon: Cpu, color: "text-primary" },
     { label: "Finance", value: stats.Finance, icon: DollarSign, color: "text-warning" },
-    { label: "Operations", value: stats.Operations, icon: Wrench, color: "text-accent-foreground" },
     { label: "Critical", value: stats.critical, icon: AlertTriangle, color: "text-critical" },
+    { label: "Escalated", value: stats.escalated, icon: Wrench, color: "text-warning" },
     { label: "Resolved", value: stats.resolved, icon: CheckCircle2, color: "text-success" },
   ];
 
