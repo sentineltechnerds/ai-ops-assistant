@@ -79,7 +79,7 @@ function Submit() {
       <form onSubmit={submit} className="mt-6 glass rounded-3xl p-7 space-y-4">
         <div className="grid grid-cols-2 gap-3">
           <Field label="Employee Name"><input required value={profile.name} onChange={e => setProfile({ ...profile, name: e.target.value })} className="input" /></Field>
-          <Field label="Department"><input required value={profile.dept} onChange={e => setProfile({ ...profile, dept: e.target.value })} className="input" /></Field>
+          <Field label="Department"><select required value={profile.dept} onChange={e => setProfile({ ...profile, dept: e.target.value as "HR"|"IT"|"Finance" })} className="input">{["HR","IT","Finance"].map(d => <option key={d}>{d}</option>)}</select></Field>
         </div>
         <Field label="Request Title">
           <input required maxLength={150} value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} className="input" placeholder="e.g. VPN connection failing" />
