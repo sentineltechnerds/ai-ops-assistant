@@ -3,10 +3,9 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 const KEYWORDS: Record<string, string[]> = {
-  HR: ["leave", "salary", "recruit", "benefit", "onboard", "payroll", "employee", "resign", "hr", "holiday"],
-  IT: ["laptop", "password", "email", "software", "vpn", "internet", "network", "server", "access", "login", "wifi", "computer"],
-  Finance: ["invoice", "reimburse", "payment", "budget", "supplier", "purchase", "expense", "claim", "finance", "accounting"],
-  Operations: ["maintenance", "facility", "office", "transport", "supplies", "equipment", "security", "air conditioning", "projector", "boardroom", "cleaning"],
+  HR: ["leave", "salary", "recruit", "benefit", "onboard", "payroll", "employee", "resign", "hr", "holiday", "vacation"],
+  IT: ["laptop", "password", "email", "software", "vpn", "internet", "network", "server", "access", "login", "wifi", "computer", "outage", "system down"],
+  Finance: ["invoice", "reimburse", "payment", "budget", "supplier", "purchase", "expense", "claim", "finance", "accounting", "refund"],
 };
 
 const CRITICAL_WORDS = ["server down", "offline", "outage", "cannot access payroll", "system down", "critical", "urgent", "emergency", "breach"];
