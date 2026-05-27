@@ -60,20 +60,11 @@ function Signup() {
                 <input required type={fl.type} value={(f as any)[fl.k]} onChange={e => setF({ ...f, [fl.k]: e.target.value })} className="mt-1.5 w-full rounded-xl bg-card border border-border px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
               </div>
             ))}
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Department</label>
-                <select value={f.department} onChange={e => setF({ ...f, department: e.target.value })} className="mt-1.5 w-full rounded-xl bg-card border border-border px-4 py-3 text-sm">
-                  {["Operations", "Engineering", "Sales", "Marketing", "HR", "Finance", "Design"].map(d => <option key={d}>{d}</option>)}
-                </select>
-              </div>
-              <div>
-                <label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Role</label>
-                <select value={f.role} onChange={e => setF({ ...f, role: e.target.value })} className="mt-1.5 w-full rounded-xl bg-card border border-border px-4 py-3 text-sm">
-                  <option value="employee">Employee</option>
-                  <option value="admin">Admin</option>
-                </select>
-              </div>
+            <div>
+              <label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Department</label>
+              <select value={f.department} onChange={e => setF({ ...f, department: e.target.value })} className="mt-1.5 w-full rounded-xl bg-card border border-border px-4 py-3 text-sm">
+                {["HR", "Finance", "IT", "Operations"].map(d => <option key={d}>{d}</option>)}
+              </select>
             </div>
             <div>
               <label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Password</label>
