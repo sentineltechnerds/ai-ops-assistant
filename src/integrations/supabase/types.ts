@@ -14,6 +14,33 @@ export type Database = {
   }
   public: {
     Tables: {
+      notifications: {
+        Row: {
+          created_at: string
+          id: string
+          is_read: boolean
+          message: string
+          title: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          message: string
+          title: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          message?: string
+          title?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
@@ -21,6 +48,7 @@ export type Database = {
           email: string
           full_name: string
           id: string
+          is_active: boolean
         }
         Insert: {
           created_at?: string
@@ -28,6 +56,7 @@ export type Database = {
           email: string
           full_name?: string
           id: string
+          is_active?: boolean
         }
         Update: {
           created_at?: string
@@ -35,6 +64,7 @@ export type Database = {
           email?: string
           full_name?: string
           id?: string
+          is_active?: boolean
         }
         Relationships: []
       }
@@ -57,6 +87,7 @@ export type Database = {
             | Database["public"]["Enums"]["ticket_category"]
             | null
           priority: Database["public"]["Enums"]["ticket_priority"]
+          resolved_at: string | null
           status: Database["public"]["Enums"]["ticket_status"]
           title: string
           updated_at: string
@@ -79,6 +110,7 @@ export type Database = {
             | Database["public"]["Enums"]["ticket_category"]
             | null
           priority?: Database["public"]["Enums"]["ticket_priority"]
+          resolved_at?: string | null
           status?: Database["public"]["Enums"]["ticket_status"]
           title: string
           updated_at?: string
@@ -101,6 +133,7 @@ export type Database = {
             | Database["public"]["Enums"]["ticket_category"]
             | null
           priority?: Database["public"]["Enums"]["ticket_priority"]
+          resolved_at?: string | null
           status?: Database["public"]["Enums"]["ticket_status"]
           title?: string
           updated_at?: string
@@ -130,6 +163,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_user_department: { Args: { _user_id: string }; Returns: string }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -137,9 +171,11 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_department_admin: { Args: { _user_id: string }; Returns: boolean }
+      is_super_admin: { Args: { _user_id: string }; Returns: boolean }
     }
     Enums: {
-      app_role: "admin" | "employee"
+      app_role: "employee" | "department_admin" | "super_admin"
       ticket_category: "HR" | "IT" | "Finance" | "Operations"
       ticket_priority: "low" | "medium" | "high" | "critical"
       ticket_status: "new" | "in_progress" | "escalated" | "resolved"
@@ -270,7 +306,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "employee"],
+      app_role: ["employee", "department_admin", "super_admin"],
       ticket_category: ["HR", "IT", "Finance", "Operations"],
       ticket_priority: ["low", "medium", "high", "critical"],
       ticket_status: ["new", "in_progress", "escalated", "resolved"],
