@@ -1,11 +1,10 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { motion } from "framer-motion";
 import { Eye, EyeOff, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Logo } from "@/components/Logo";
-import { useAuth } from "@/lib/auth-context";
 
 export const Route = createFileRoute("/signup")({
   head: () => ({ meta: [{ title: "Create account — Aurora" }] }),
@@ -14,7 +13,6 @@ export const Route = createFileRoute("/signup")({
 
 function Signup() {
   const nav = useNavigate();
-  const { session } = useAuth();
   const [f, setF] = useState({ fullName: "", email: "", department: "Operations", password: "", confirm: "" });
   const [show, setShow] = useState(false);
   const [loading, setLoading] = useState(false);
