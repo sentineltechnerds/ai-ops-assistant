@@ -15,11 +15,9 @@ export const Route = createFileRoute("/signup")({
 function Signup() {
   const nav = useNavigate();
   const { session } = useAuth();
-  const [f, setF] = useState({ fullName: "", email: "", department: "Operations", password: "", confirm: "", role: "employee" });
+  const [f, setF] = useState({ fullName: "", email: "", department: "Operations", password: "", confirm: "" });
   const [show, setShow] = useState(false);
   const [loading, setLoading] = useState(false);
-
-  useEffect(() => { if (session) nav({ to: "/dashboard", replace: true }); }, [session, nav]);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -30,13 +28,19 @@ function Signup() {
       email: f.email,
       password: f.password,
       options: {
-        emailRedirectTo: `${window.location.origin}/dashboard`,
-        data: { full_name: f.fullName, department: f.department, role: f.role },
+        emailRedirectTo: `${window.location.origin}/login`,
+        data: { full_name: f.fullName, department: f.department, role: "employee" },
       },
     });
+    if (error) {
+      setLoading(false);
+      return toast.error(error.message);
+    }
+    // Sign out so the user explicitly logs in afterwards
+    await supabase.auth.signOut();
     setLoading(false);
-    if (error) return toast.error(error.message);
-    toast.success("Account created");
+    toast.success("Account created — please sign in");
+    nav({ to: "/login", replace: true });
   };
 
   return (
