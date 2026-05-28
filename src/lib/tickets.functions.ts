@@ -8,9 +8,9 @@ const KEYWORDS: Record<string, string[]> = {
   Finance: ["invoice", "reimburse", "payment", "budget", "supplier", "purchase", "expense", "claim", "finance", "accounting", "refund"],
 };
 
-const CRITICAL_WORDS = ["server down", "offline", "outage", "cannot access payroll", "system down", "critical", "urgent", "emergency", "breach"];
-const HIGH_WORDS = ["cannot connect", "blocked", "broken", "asap", "important", "stuck"];
-const LOW_WORDS = ["request", "supplies", "schedule", "info"];
+const CRITICAL_WORDS = ["server down", "server is offline", "offline", "outage", "cannot access payroll", "payroll down", "system down", "critical", "urgent", "emergency", "breach", "data loss", "production down"];
+const HIGH_WORDS = ["cannot connect", "cannot access", "blocked", "broken", "asap", "important", "stuck", "failing", "not working"];
+const LOW_WORDS = ["request", "supplies", "schedule", "info", "stationery", "general inquiry"];
 
 function keywordClassify(title: string, description: string) {
   const text = `${title} ${description}`.toLowerCase();
@@ -49,14 +49,14 @@ async function aiClassify(title: string, description: string) {
       body: JSON.stringify({
         model: "google/gemini-2.5-flash",
         messages: [
-          { role: "system", content: "You are an enterprise operations AI that classifies internal employee support requests. Respond by calling the classify_ticket function." },
+          { role: "system", content: "You are an enterprise operations AI that classifies internal employee support requests and assigns urgency based on operational impact, business interruption risk, and severity. Critical = system outages, payroll failures, security breaches. High = blocked work, broken access. Medium = standard requests. Low = informational or supplies. Respond by calling classify_ticket." },
           { role: "user", content: `Title: ${title}\nDescription: ${description}` },
         ],
         tools: [{
           type: "function",
           function: {
             name: "classify_ticket",
-            description: "Classify a support ticket",
+            description: "Classify a support ticket and determine urgency",
             parameters: {
               type: "object",
               properties: {
@@ -99,7 +99,6 @@ const queueMap: Record<string, string> = {
   HR: "HR Queue",
   IT: "IT Support Queue",
   Finance: "Finance Approval Queue",
-  Operations: "Facilities Queue",
 };
 
 export const submitTicket = createServerFn({ method: "POST" })
@@ -107,20 +106,20 @@ export const submitTicket = createServerFn({ method: "POST" })
   .inputValidator((input) => z.object({
     title: z.string().trim().min(3).max(150),
     description: z.string().trim().min(5).max(2000),
-    priority: z.enum(["low", "medium", "high", "critical"]),
-    department: z.string().trim().min(1).max(80),
     employeeName: z.string().trim().min(1).max(120),
   }).parse(input))
   .handler(async ({ data, context }) => {
     const ai = await aiClassify(data.title, data.description);
     const { supabase, userId } = context;
+    // AI-determined category becomes the owning department.
+    // AI-determined priority is authoritative (employee no longer chooses).
     const { data: row, error } = await supabase.from("tickets").insert({
       employee_id: userId,
       employee_name: data.employeeName,
-      department: data.department,
+      department: ai.category,
       title: data.title,
       description: data.description,
-      priority: data.priority,
+      priority: ai.priority,
       ai_suggested_priority: ai.priority,
       predicted_category: ai.category,
       confidence_score: ai.confidence,
