@@ -1,69 +1,57 @@
-# Enterprise Workflow Update Plan
+## Workflow & Permission Updates
 
-Preserving the current design system (glassmorphism, lavender/cream palette, Gemini AI, ticket classification). Only the changes below.
+Scope: surgical updates to existing app. No redesign, no architecture changes.
 
-## 1. Database changes (single migration)
+### 1. Employee submit form — remove priority selector
+File: `src/routes/_authenticated/submit.tsx`
+- Remove the priority dropdown/field entirely.
+- Default the submitted priority to `"medium"` server-side; AI fills `ai_suggested_priority`.
+- Show AI-determined priority on the post-submit confirmation screen.
 
-- Extend `app_role` enum: add `department_admin` and `super_admin`. Migrate existing `admin` rows → `super_admin`. Keep `employee`.
-- `profiles`: add `is_active boolean default true`.
-- `tickets`: add `resolved_at timestamptz`. Restrict `department` to `HR | IT | Finance` going forward (CHECK).
-- New `notifications` table: `id, user_id, title, message, is_read, created_at` + RLS (user sees own; service_role full).
-- New security definer helpers:
-  - `is_super_admin(uuid)` 
-  - `get_user_department(uuid)` (reads `profiles.department`)
-- Rewrite RLS:
-  - `tickets SELECT`: owner OR super_admin OR (department_admin AND ticket.department = caller's department).
-  - `tickets UPDATE`: super_admin OR (department_admin AND same department). On UPDATE to `resolved`, a trigger inserts a notification for the employee and stamps `resolved_at`.
-  - `profiles SELECT/UPDATE`: super_admin can read/write all; users own row.
-  - `user_roles`: super_admin manages all.
-- Confirm super admin: ensure `dickson.tladi@capaciti.org.za` has role `super_admin` (update existing `admin` row).
+### 2. AI engine — make priority authoritative
+File: `src/lib/tickets.functions.ts`
+- In `submitTicket`, write the AI priority into BOTH `priority` and `ai_suggested_priority` (so queues sort by AI urgency).
+- Drop the incoming `priority` field from the input validator.
+- Keep existing keyword + Gemini classifier; tighten critical/high keyword lists slightly (server down, payroll, breach, outage → critical).
 
-## 2. Auth flow
+### 3. Department queue — AI-priority ordering + visuals
+File: `src/routes/_authenticated/queue.tsx`
+- Sort: `critical → high → medium → low`, then by `created_at` asc.
+- Critical row: pulsing red glow ring, animated alert dot, "ESCALATE" badge.
+- Confirm RLS already isolates by department (it does — `tickets_select_scoped` uses `get_user_department`). No DB changes needed for isolation.
+- Add department-specific counters (Critical / High / Open / Resolved today) at top.
 
-- Remove `/signup` route entirely (delete file). Login page only; keep forgot password (add if missing — minimal).
-- `auth-context`: expose `role` ∈ `employee | department_admin | super_admin` plus `department`.
+### 4. Strict department isolation — verify & lock down UI
+- `queue.tsx` and `tickets.tsx` for department_admin: filter client-side as a backstop (RLS is primary).
+- Hide cross-department analytics / global counts from department_admin nav.
+- `_authenticated.tsx` sidebar: department admins see only Queue + History + Notifications (no Users, no Command Center, no global Tickets).
 
-## 3. Routing & permissions
+### 5. Super Admin Command Center — oversight only
+Files: `src/routes/_authenticated/dashboard.tsx` (super_admin view), `src/routes/_authenticated/users.tsx`
+- Confirm super admin sees all tickets, per-department counters (IT/HR/Finance), critical alerts, resolution rates.
+- Super admin does NOT get queue action buttons (resolve/in_progress) — read-only monitoring on ticket lists. Updates stay scoped to department_admins.
 
-- `_authenticated` layout: role-aware redirects.
-  - employee → `/dashboard` (their personal view) with tabs: Submit, History.
-  - department_admin → `/queue` (department-scoped).
-  - super_admin → `/command-center`.
-- Remove `Submit Ticket` and `Analytics` from Command Center nav.
+### 6. Auto-generated passwords for user creation
+File: `src/lib/admin.functions.ts` + `src/routes/_authenticated/users.tsx`
+- Remove the temp-password input from the Create User dialog.
+- Server generates a 12-char password: upper+lower+digit+symbol guaranteed, rest random from full set.
+- Return the generated password ONCE in the createUser response.
+- UI: show credentials in a "Copy credentials" modal after creation (email + generated password, one-time view with copy buttons and a warning).
 
-## 4. Operations Command Center (super admin)
+### 7. Department whitelist enforcement
+- Create User form: department options restricted to `HR | IT | Finance` only (already enforced in DB CHECK + handle_new_user trigger). Verify the Select options match.
 
-Routes under `/command-center/*`:
-- **Overview**: cards (Total, HR, IT, Finance, Critical, Resolved, Escalated). Category chart shows only HR/IT/Finance. Priority queue (Critical → Low) with urgency pulse animation.
-- **User Management**: list users (search, activate/deactivate), Create User dialog (name, email, department HR/IT/Finance, role employee|department_admin, temp password). Uses a server function with `supabaseAdmin` to create the user and assign role.
-- **All Tickets**: cross-department ticket browser.
+### 8. AI priority badge component
+- Small reusable badge with color + icon per level; pulse animation on `critical`.
+- Used in: queue rows, history timeline, super admin dashboard, post-submit confirmation.
 
-## 5. Department admin view
+### Out of scope (untouched)
+- Design system, color palette, glassmorphism
+- Gemini classification model/prompt structure
+- Auth flow, login page, routing tree
+- Database schema, RLS policies, triggers (current schema already supports everything above)
+- Notifications system (already wired)
 
-- `/queue` shows only tickets where `department = current user's department`. Actions: update status, mark resolved.
-
-## 6. Employee experience
-
-- `/dashboard`: personal summary + recent tickets.
-- `/submit`: existing form (departments restricted to HR/IT/Finance).
-- `/history`: new page — list of own tickets with animated status badges, timeline (New → In Progress → Awaiting Review/Escalated → Resolved), AI classification details.
-- Notification bell in top nav: dropdown, unread count, mark-as-read. Realtime via Supabase channel on `notifications`.
-
-## 7. Server functions
-
-- `createUser.functions.ts` (super_admin only) — uses admin client to create auth user + profile + role.
-- `setUserActive`, `updateUserRole` — super_admin only.
-- `updateTicketStatus` — checks caller is super_admin or matching department_admin; trigger handles notification on resolve.
-
-## Technical notes
-
-- New enum values + dropping `admin` requires creating new enum, migrating columns, dropping old. Done in one migration.
-- All new tables get explicit `GRANT`s for `authenticated` and `service_role`.
-- Realtime: `ALTER PUBLICATION supabase_realtime ADD TABLE public.notifications`.
-- Keep existing styles.css tokens; reuse `glass`, `bg-gradient-hero`, `shadow-glow`.
-
-## Out of scope (not changing)
-
-- Visual design system, color palette, Gemini classification logic, existing ticket submit form, login styling.
-
-Proceed?
+### Technical notes
+- No migrations required — `ticket_priority` enum already has all 4 levels, RLS already isolates by department, `resolved_at` trigger already exists.
+- All changes are frontend + 2 server functions (`submitTicket`, `createUser`).

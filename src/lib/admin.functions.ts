@@ -23,6 +23,18 @@ export const listUsers = createServerFn({ method: "GET" })
     return { users: merged };
   });
 
+function generateSecurePassword(length = 12): string {
+  const upper = "ABCDEFGHJKLMNPQRSTUVWXYZ";
+  const lower = "abcdefghijkmnopqrstuvwxyz";
+  const digits = "23456789";
+  const symbols = "!@#$%^&*?";
+  const all = upper + lower + digits + symbols;
+  const pick = (s: string) => s[Math.floor(Math.random() * s.length)];
+  const required = [pick(upper), pick(lower), pick(digits), pick(symbols)];
+  const rest = Array.from({ length: Math.max(length - 4, 6) }, () => pick(all));
+  return [...required, ...rest].sort(() => Math.random() - 0.5).join("");
+}
+
 export const createUser = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input) => z.object({
@@ -30,23 +42,22 @@ export const createUser = createServerFn({ method: "POST" })
     email: z.string().email().max(200),
     department: z.enum(["HR", "IT", "Finance"]),
     role: z.enum(["employee", "department_admin"]),
-    password: z.string().min(8).max(72),
   }).parse(input))
   .handler(async ({ data, context }) => {
     await assertSuperAdmin(context.supabase, context.userId);
+    const password = generateSecurePassword(12);
     const { data: created, error } = await supabaseAdmin.auth.admin.createUser({
-      email: data.email, password: data.password, email_confirm: true,
+      email: data.email, password, email_confirm: true,
       user_metadata: { full_name: data.fullName, department: data.department, role: data.role },
     });
     if (error) throw new Error(error.message);
-    // Ensure role is set explicitly (handle_new_user uses metadata but safeguard)
     if (created.user) {
       await supabaseAdmin.from("user_roles").upsert({ user_id: created.user.id, role: data.role }, { onConflict: "user_id,role" });
       await supabaseAdmin.from("profiles").update({
         full_name: data.fullName, department: data.department,
       }).eq("id", created.user.id);
     }
-    return { ok: true };
+    return { ok: true, email: data.email, password };
   });
 
 export const setUserActive = createServerFn({ method: "POST" })
