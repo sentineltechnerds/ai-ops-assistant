@@ -157,7 +157,7 @@ function Dashboard() {
                 <span className={`text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full border ${priorityColors[t.priority]}`}>{t.priority}</span>
                 <span className="text-[10px] px-2.5 py-1 rounded-full bg-secondary font-medium">{t.predicted_category}</span>
                 {t.confidence_score && <span className="text-[10px] text-muted-foreground">AI {Math.round(Number(t.confidence_score) * 100)}%</span>}
-                {isAdmin ? (
+                {isDeptAdmin ? (
                   <select value={t.status} onChange={e => setStatus(t.id, e.target.value)} className={`text-[10px] font-semibold uppercase rounded-full px-2.5 py-1 border-0 ${statusColors[t.status]}`}>
                     <option value="new">New</option><option value="in_progress">In Progress</option><option value="escalated">Escalated</option><option value="resolved">Resolved</option>
                   </select>
