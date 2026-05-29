@@ -23,8 +23,9 @@ function Users() {
   });
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState("");
-  const [form, setForm] = useState({ fullName: "", email: "", department: "IT" as "HR"|"IT"|"Finance", role: "employee" as "employee"|"department_admin", password: "" });
+  const [form, setForm] = useState({ fullName: "", email: "", department: "IT" as "HR"|"IT"|"Finance", role: "employee" as "employee"|"department_admin" });
   const [busy, setBusy] = useState(false);
+  const [credentials, setCredentials] = useState<{ email: string; password: string } | null>(null);
 
   if (role !== "super_admin") return <div className="text-sm text-muted-foreground">Access denied.</div>;
 
@@ -36,10 +37,10 @@ function Users() {
     e.preventDefault();
     setBusy(true);
     try {
-      await createFn({ data: form });
-      toast.success(`User created · temp password: ${form.password}`);
+      const res = await createFn({ data: form });
+      setCredentials({ email: res.email, password: res.password });
       setOpen(false);
-      setForm({ fullName: "", email: "", department: "IT", role: "employee", password: "" });
+      setForm({ fullName: "", email: "", department: "IT", role: "employee" });
       refetch();
     } catch (e: any) { toast.error(e.message); }
     setBusy(false);
