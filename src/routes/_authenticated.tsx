@@ -45,9 +45,8 @@ function Layout() {
     );
   } else {
     baseNav.push(
-      { to: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
-      { to: "/submit", icon: PlusCircle, label: "Submit Ticket" },
       { to: "/tickets", icon: History, label: "My Tickets" },
+      { to: "/submit", icon: PlusCircle, label: "Submit Ticket" },
     );
   }
 
