@@ -45,9 +45,29 @@ export const createUser = createServerFn({ method: "POST" })
   }).parse(input))
   .handler(async ({ data, context }) => {
     await assertSuperAdmin(context.supabase, context.userId);
+    const email = data.email.trim().toLowerCase();
+
+    // 1. Source of truth: does a profile already exist for this email?
+    const { data: existingProfile } = await supabaseAdmin
+      .from("profiles").select("id").eq("email", email).maybeSingle();
+    if (existingProfile) {
+      throw new Error(`An active user already exists with ${email}.`);
+    }
+
+    // 2. Clean up any orphan auth.users row that no longer has a profile.
+    //    (Failed prior creations or manually deleted profiles leave these behind
+    //     and cause "User already registered" errors on retry.)
+    try {
+      const { data: list } = await supabaseAdmin.auth.admin.listUsers({ page: 1, perPage: 200 });
+      const orphan = list?.users?.find(u => (u.email ?? "").toLowerCase() === email);
+      if (orphan) {
+        await supabaseAdmin.auth.admin.deleteUser(orphan.id);
+      }
+    } catch { /* non-fatal — fall through to create */ }
+
     const password = generateSecurePassword(12);
     const { data: created, error } = await supabaseAdmin.auth.admin.createUser({
-      email: data.email, password, email_confirm: true,
+      email, password, email_confirm: true,
       user_metadata: { full_name: data.fullName, department: data.department, role: data.role },
     });
     if (error) throw new Error(error.message);
@@ -57,7 +77,7 @@ export const createUser = createServerFn({ method: "POST" })
         full_name: data.fullName, department: data.department,
       }).eq("id", created.user.id);
     }
-    return { ok: true, email: data.email, password };
+    return { ok: true, email, password };
   });
 
 export const setUserActive = createServerFn({ method: "POST" })

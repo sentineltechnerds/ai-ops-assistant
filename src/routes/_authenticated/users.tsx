@@ -23,8 +23,9 @@ function Users() {
   });
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState("");
-  const [form, setForm] = useState({ fullName: "", email: "", department: "IT" as "HR"|"IT"|"Finance", role: "employee" as "employee"|"department_admin", password: "" });
+  const [form, setForm] = useState({ fullName: "", email: "", department: "IT" as "HR"|"IT"|"Finance", role: "employee" as "employee"|"department_admin" });
   const [busy, setBusy] = useState(false);
+  const [credentials, setCredentials] = useState<{ email: string; password: string } | null>(null);
 
   if (role !== "super_admin") return <div className="text-sm text-muted-foreground">Access denied.</div>;
 
@@ -36,10 +37,10 @@ function Users() {
     e.preventDefault();
     setBusy(true);
     try {
-      await createFn({ data: form });
-      toast.success(`User created · temp password: ${form.password}`);
+      const res = await createFn({ data: form });
+      setCredentials({ email: res.email, password: res.password });
       setOpen(false);
-      setForm({ fullName: "", email: "", department: "IT", role: "employee", password: "" });
+      setForm({ fullName: "", email: "", department: "IT", role: "employee" });
       refetch();
     } catch (e: any) { toast.error(e.message); }
     setBusy(false);
@@ -105,7 +106,7 @@ function Users() {
                 <option value="department_admin">Department Admin</option>
               </select>
             </div>
-            <input required type="text" placeholder="Temporary password (min 8 chars)" minLength={8} value={form.password} onChange={e => setForm({ ...form, password: e.target.value })} className="w-full rounded-xl bg-card border border-border px-4 py-2.5 text-sm font-mono" />
+            <p className="text-[11px] text-muted-foreground px-1">A secure temporary password will be generated and shown after the account is created.</p>
             <div className="flex gap-2 pt-2">
               <button type="button" onClick={() => setOpen(false)} className="flex-1 rounded-xl bg-secondary py-2.5 text-sm font-medium">Cancel</button>
               <button disabled={busy} className="flex-1 bg-gradient-primary text-primary-foreground rounded-xl py-2.5 text-sm font-semibold inline-flex items-center justify-center gap-2 disabled:opacity-60">
@@ -113,6 +114,25 @@ function Users() {
               </button>
             </div>
           </motion.form>
+        </div>
+      )}
+
+      {credentials && (
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setCredentials(null)}>
+          <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} onClick={e => e.stopPropagation()}
+            className="glass rounded-3xl p-6 w-full max-w-md space-y-4 shadow-glow">
+            <h2 className="font-display text-xl font-bold">Account created</h2>
+            <p className="text-xs text-muted-foreground">Share these credentials securely. The password is shown only once.</p>
+            <div className="space-y-2">
+              <div className="rounded-xl bg-card border border-border px-4 py-2.5 text-sm font-mono break-all">{credentials.email}</div>
+              <div className="rounded-xl bg-card border border-border px-4 py-2.5 text-sm font-mono break-all">{credentials.password}</div>
+            </div>
+            <div className="flex gap-2">
+              <button onClick={() => { navigator.clipboard.writeText(`Email: ${credentials.email}\nPassword: ${credentials.password}`); toast.success("Copied"); }}
+                className="flex-1 bg-gradient-primary text-primary-foreground rounded-xl py-2.5 text-sm font-semibold">Copy credentials</button>
+              <button onClick={() => setCredentials(null)} className="flex-1 rounded-xl bg-secondary py-2.5 text-sm font-medium">Done</button>
+            </div>
+          </motion.div>
         </div>
       )}
     </div>
