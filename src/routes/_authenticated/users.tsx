@@ -106,7 +106,7 @@ function Users() {
                 <option value="department_admin">Department Admin</option>
               </select>
             </div>
-            <input required type="text" placeholder="Temporary password (min 8 chars)" minLength={8} value={form.password} onChange={e => setForm({ ...form, password: e.target.value })} className="w-full rounded-xl bg-card border border-border px-4 py-2.5 text-sm font-mono" />
+            <p className="text-[11px] text-muted-foreground px-1">A secure temporary password will be generated and shown after the account is created.</p>
             <div className="flex gap-2 pt-2">
               <button type="button" onClick={() => setOpen(false)} className="flex-1 rounded-xl bg-secondary py-2.5 text-sm font-medium">Cancel</button>
               <button disabled={busy} className="flex-1 bg-gradient-primary text-primary-foreground rounded-xl py-2.5 text-sm font-semibold inline-flex items-center justify-center gap-2 disabled:opacity-60">
