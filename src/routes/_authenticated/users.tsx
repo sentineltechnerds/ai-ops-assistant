@@ -116,6 +116,25 @@ function Users() {
           </motion.form>
         </div>
       )}
+
+      {credentials && (
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setCredentials(null)}>
+          <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} onClick={e => e.stopPropagation()}
+            className="glass rounded-3xl p-6 w-full max-w-md space-y-4 shadow-glow">
+            <h2 className="font-display text-xl font-bold">Account created</h2>
+            <p className="text-xs text-muted-foreground">Share these credentials securely. The password is shown only once.</p>
+            <div className="space-y-2">
+              <div className="rounded-xl bg-card border border-border px-4 py-2.5 text-sm font-mono break-all">{credentials.email}</div>
+              <div className="rounded-xl bg-card border border-border px-4 py-2.5 text-sm font-mono break-all">{credentials.password}</div>
+            </div>
+            <div className="flex gap-2">
+              <button onClick={() => { navigator.clipboard.writeText(`Email: ${credentials.email}\nPassword: ${credentials.password}`); toast.success("Copied"); }}
+                className="flex-1 bg-gradient-primary text-primary-foreground rounded-xl py-2.5 text-sm font-semibold">Copy credentials</button>
+              <button onClick={() => setCredentials(null)} className="flex-1 rounded-xl bg-secondary py-2.5 text-sm font-medium">Done</button>
+            </div>
+          </motion.div>
+        </div>
+      )}
     </div>
   );
 }
