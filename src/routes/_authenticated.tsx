@@ -19,6 +19,13 @@ function Layout() {
     if (!loading && !session) navigate({ to: "/login", replace: true });
   }, [session, loading, navigate]);
 
+  // Employees never see the admin dashboard — bounce them to their tickets.
+  useEffect(() => {
+    if (!loading && session && role === "employee" && loc.pathname === "/dashboard") {
+      navigate({ to: "/tickets", replace: true });
+    }
+  }, [role, loading, session, loc.pathname, navigate]);
+
   if (loading || !session) {
     return <div className="min-h-screen flex items-center justify-center text-sm text-muted-foreground">Loading workspace…</div>;
   }
