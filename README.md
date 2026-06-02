@@ -130,7 +130,7 @@ Cannot:
 
 ---
 
-### Super Admin
+### Operations Manager
 
 Can:
 
