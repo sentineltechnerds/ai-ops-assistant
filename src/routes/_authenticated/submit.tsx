@@ -67,6 +67,10 @@ function Submit() {
             <Row label="Status" value={<span className="px-2.5 py-1 rounded-full bg-primary/15 text-primary text-xs font-semibold uppercase">{result.status}</span>} />
             {result.ai_fallback && <div className="text-xs text-warning bg-warning/10 rounded-xl p-3">AI fallback mode active — keyword classification used.</div>}
           </div>
+          <div className="mt-6 rounded-2xl border border-border bg-card/60 p-5">
+            <div className="text-[10px] uppercase tracking-wider text-muted-foreground mb-2">Official acknowledgement</div>
+            <pre className="whitespace-pre-wrap font-sans text-sm leading-relaxed text-foreground">{professionalResponse(result).body}</pre>
+          </div>
           <div className="mt-6 flex gap-2">
             <button onClick={() => { setResult(null); setForm({ title: "", description: "" }); }} className="px-5 py-2.5 rounded-xl bg-secondary text-sm font-medium">Submit another</button>
             <button onClick={() => nav({ to: "/tickets" })} className="px-5 py-2.5 rounded-xl bg-gradient-primary text-primary-foreground text-sm font-semibold">View my tickets</button>
