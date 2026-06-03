@@ -58,7 +58,7 @@ function Tickets() {
               <div className="flex flex-wrap items-start justify-between gap-4">
                 <div className="flex-1 min-w-[260px]">
                   <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                    <span className="font-mono">#{t.id.slice(0, 8)}</span>
+                    <span className="font-mono font-semibold text-primary">{t.reference_number || `#${t.id.slice(0, 8)}`}</span>
                     <span>·</span>
                     <span>{t.department}</span>
                     <span>·</span>
