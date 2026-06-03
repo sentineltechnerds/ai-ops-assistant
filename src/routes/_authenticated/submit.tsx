@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { submitTicket } from "@/lib/tickets.functions";
 import { useAuth } from "@/lib/auth-context";
 import { supabase } from "@/integrations/supabase/client";
+import { professionalResponse } from "@/lib/ticket-templates";
 
 export const Route = createFileRoute("/_authenticated/submit")({
   head: () => ({ meta: [{ title: "Submit Ticket — Aurora" }] }),
@@ -51,7 +52,7 @@ function Submit() {
         <div className={`glass rounded-3xl p-8 shadow-glow ${result.priority === "critical" ? "ring-2 ring-critical/40" : ""}`}>
           <div className="flex items-center gap-3"><CheckCircle2 className="h-6 w-6 text-success" /><h2 className="font-display text-2xl font-bold">Ticket routed by AI</h2></div>
           <div className="mt-6 grid gap-4">
-            <Row label="Ticket ID" value={`#${result.id.slice(0, 8)}`} />
+            <Row label="Reference Number" value={<span className="font-mono font-semibold text-primary">{result.reference_number || `#${result.id.slice(0, 8)}`}</span>} />
             <Row label="Title" value={result.title} />
             <Row label="AI Department" value={<span className="px-2.5 py-1 rounded-full bg-primary/15 text-primary text-xs font-semibold">{result.predicted_category}</span>} />
             <Row label="AI Priority" value={
@@ -65,6 +66,10 @@ function Submit() {
             <Row label="Routed to" value={result.assigned_queue} />
             <Row label="Status" value={<span className="px-2.5 py-1 rounded-full bg-primary/15 text-primary text-xs font-semibold uppercase">{result.status}</span>} />
             {result.ai_fallback && <div className="text-xs text-warning bg-warning/10 rounded-xl p-3">AI fallback mode active — keyword classification used.</div>}
+          </div>
+          <div className="mt-6 rounded-2xl border border-border bg-card/60 p-5">
+            <div className="text-[10px] uppercase tracking-wider text-muted-foreground mb-2">Official acknowledgement</div>
+            <pre className="whitespace-pre-wrap font-sans text-sm leading-relaxed text-foreground">{professionalResponse(result).body}</pre>
           </div>
           <div className="mt-6 flex gap-2">
             <button onClick={() => { setResult(null); setForm({ title: "", description: "" }); }} className="px-5 py-2.5 rounded-xl bg-secondary text-sm font-medium">Submit another</button>
