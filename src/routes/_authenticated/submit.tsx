@@ -51,7 +51,7 @@ function Submit() {
         <div className={`glass rounded-3xl p-8 shadow-glow ${result.priority === "critical" ? "ring-2 ring-critical/40" : ""}`}>
           <div className="flex items-center gap-3"><CheckCircle2 className="h-6 w-6 text-success" /><h2 className="font-display text-2xl font-bold">Ticket routed by AI</h2></div>
           <div className="mt-6 grid gap-4">
-            <Row label="Ticket ID" value={`#${result.id.slice(0, 8)}`} />
+            <Row label="Reference Number" value={<span className="font-mono font-semibold text-primary">{result.reference_number || `#${result.id.slice(0, 8)}`}</span>} />
             <Row label="Title" value={result.title} />
             <Row label="AI Department" value={<span className="px-2.5 py-1 rounded-full bg-primary/15 text-primary text-xs font-semibold">{result.predicted_category}</span>} />
             <Row label="AI Priority" value={
