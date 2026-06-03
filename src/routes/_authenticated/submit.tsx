@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { submitTicket } from "@/lib/tickets.functions";
 import { useAuth } from "@/lib/auth-context";
 import { supabase } from "@/integrations/supabase/client";
+import { professionalResponse } from "@/lib/ticket-templates";
 
 export const Route = createFileRoute("/_authenticated/submit")({
   head: () => ({ meta: [{ title: "Submit Ticket — Aurora" }] }),
