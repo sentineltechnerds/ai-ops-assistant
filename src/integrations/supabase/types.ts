@@ -87,6 +87,7 @@ export type Database = {
             | Database["public"]["Enums"]["ticket_category"]
             | null
           priority: Database["public"]["Enums"]["ticket_priority"]
+          reference_number: string | null
           resolved_at: string | null
           status: Database["public"]["Enums"]["ticket_status"]
           title: string
@@ -110,6 +111,7 @@ export type Database = {
             | Database["public"]["Enums"]["ticket_category"]
             | null
           priority?: Database["public"]["Enums"]["ticket_priority"]
+          reference_number?: string | null
           resolved_at?: string | null
           status?: Database["public"]["Enums"]["ticket_status"]
           title: string
@@ -133,6 +135,7 @@ export type Database = {
             | Database["public"]["Enums"]["ticket_category"]
             | null
           priority?: Database["public"]["Enums"]["ticket_priority"]
+          reference_number?: string | null
           resolved_at?: string | null
           status?: Database["public"]["Enums"]["ticket_status"]
           title?: string
