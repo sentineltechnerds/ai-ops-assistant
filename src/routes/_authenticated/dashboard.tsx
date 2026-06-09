@@ -177,6 +177,36 @@ function Dashboard() {
           </div>
         )}
       </section>
+
+      {isSuper && (
+        <section className="glass rounded-3xl p-6 border border-primary/20">
+          <div className="flex items-center gap-2 mb-3">
+            <Sparkles className="h-4 w-4 text-primary" />
+            <h3 className="font-semibold">Enterprise Weekly Summary</h3>
+          </div>
+          {insightsQ.isLoading ? (
+            <div className="text-sm text-muted-foreground">Generating executive briefing…</div>
+          ) : insightsQ.data?.empty || !insightsQ.data?.enterprise ? (
+            <div className="text-sm text-muted-foreground">No summary available yet — insufficient ticket activity.</div>
+          ) : (() => {
+            const e = insightsQ.data.enterprise;
+            return (
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 md:grid-cols-5 gap-3 text-xs">
+                  <div><div className="text-muted-foreground">Total</div><div className="font-bold text-lg">{e.total}</div></div>
+                  <div><div className="text-muted-foreground">Open</div><div className="font-bold text-lg">{e.open}</div></div>
+                  <div><div className="text-muted-foreground">Closed</div><div className="font-bold text-lg">{e.closed}</div></div>
+                  <div><div className="text-muted-foreground">Top Dept</div><div className="font-bold text-lg">{e.topDept}</div></div>
+                  <div><div className="text-muted-foreground">WoW Trend</div><div className={`font-bold text-lg ${e.wowTrendPct > 0 ? "text-warning" : e.wowTrendPct < 0 ? "text-success" : "text-muted-foreground"}`}>{e.wowTrendPct > 0 ? "↑" : e.wowTrendPct < 0 ? "↓" : "→"} {Math.abs(e.wowTrendPct)}%</div></div>
+                </div>
+                {e.insight && (
+                  <p className="text-sm leading-relaxed italic text-muted-foreground border-t border-border/50 pt-4">"{e.insight}"</p>
+                )}
+              </div>
+            );
+          })()}
+        </section>
+      )}
     </div>
   );
 }
