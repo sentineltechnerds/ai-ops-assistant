@@ -86,7 +86,7 @@ function AnalyticsPage() {
     const responseMin = (arr: any[]) => {
       const v = arr
         .filter(t => t.resolved_at)
-        .map(t => (new Date(t.resolved_at).getTime() - new Date(t.created_at).getTime()) / 60000)
+        .map(t => (new Date(t.resolved_at as string).getTime() - new Date(t.created_at).getTime()) / 60000)
         .filter(n => n >= 0);
       return v.length ? v.reduce((a, b) => a + b, 0) / v.length : null;
     };
