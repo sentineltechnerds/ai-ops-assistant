@@ -2,9 +2,10 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { motion } from "framer-motion";
-import { Ticket, Users, Cpu, DollarSign, Wrench, AlertTriangle, CheckCircle2, TrendingUp } from "lucide-react";
+import { Ticket, Users, Cpu, DollarSign, Wrench, AlertTriangle, CheckCircle2, TrendingUp, Sparkles } from "lucide-react";
 import { BarChart, Bar, ResponsiveContainer, XAxis, YAxis, Tooltip, PieChart, Pie, Cell } from "recharts";
 import { listAllTickets, listMyTickets, updateTicketStatus } from "@/lib/tickets.functions";
+import { getWeeklyInsights } from "@/lib/analytics.functions";
 import { useAuth } from "@/lib/auth-context";
 import { toast } from "sonner";
 
