@@ -35,9 +35,16 @@ function Dashboard() {
   const isAdmin = isSuper || isDeptAdmin;
   const fn = useServerFn(isAdmin ? listAllTickets : listMyTickets);
   const updateFn = useServerFn(updateTicketStatus);
+  const insightsFn = useServerFn(getWeeklyInsights);
   const { data, isLoading, refetch } = useQuery({
     queryKey: ["tickets", role, department],
     queryFn: () => fn(),
+  });
+  const insightsQ = useQuery({
+    queryKey: ["enterprise-weekly"],
+    queryFn: () => insightsFn({ data: { scope: "all" } }),
+    enabled: isSuper,
+    staleTime: 5 * 60 * 1000,
   });
 
   const allTickets = data?.tickets ?? [];
