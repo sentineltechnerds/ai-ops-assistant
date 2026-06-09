@@ -35,12 +35,14 @@ function Layout() {
   if (role === "super_admin") {
     baseNav.push(
       { to: "/dashboard", icon: Shield, label: "Command Center" },
+      { to: "/analytics", icon: BarChart3, label: "Analytics" },
       { to: "/users", icon: Users, label: "User Management" },
       { to: "/tickets", icon: History, label: "All Tickets" },
     );
   } else if (role === "department_admin") {
     baseNav.push(
       { to: "/queue", icon: ListChecks, label: "Department Queue" },
+      { to: "/analytics", icon: BarChart3, label: "Analytics" },
       { to: "/tickets", icon: History, label: "Ticket History" },
     );
   } else {
