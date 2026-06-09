@@ -154,7 +154,7 @@ function AnalyticsPage() {
   // Response time bar chart per dept
   const respData = ["IT", "HR", "Finance"].map(d => {
     const arr = tickets.filter(t => t.department === d && t.resolved_at)
-      .map(t => (new Date(t.resolved_at).getTime() - new Date(t.created_at).getTime()) / 60000)
+      .map(t => (new Date(t.resolved_at as string).getTime() - new Date(t.created_at).getTime()) / 60000)
       .filter(n => n >= 0);
     return {
       department: d,
