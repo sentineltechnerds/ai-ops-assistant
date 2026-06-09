@@ -1,6 +1,6 @@
 import { createFileRoute, Outlet, Link, useNavigate, useLocation } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { LayoutDashboard, PlusCircle, History, ListChecks, LogOut, Menu, Users, Shield } from "lucide-react";
+import { LayoutDashboard, PlusCircle, History, ListChecks, LogOut, Menu, Users, Shield, BarChart3 } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import { Logo } from "@/components/Logo";
 import { NotificationBell } from "@/components/NotificationBell";
