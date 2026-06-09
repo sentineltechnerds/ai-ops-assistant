@@ -2,9 +2,10 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { motion } from "framer-motion";
-import { Ticket, Users, Cpu, DollarSign, Wrench, AlertTriangle, CheckCircle2, TrendingUp } from "lucide-react";
+import { Ticket, Users, Cpu, DollarSign, Wrench, AlertTriangle, CheckCircle2, TrendingUp, Sparkles } from "lucide-react";
 import { BarChart, Bar, ResponsiveContainer, XAxis, YAxis, Tooltip, PieChart, Pie, Cell } from "recharts";
 import { listAllTickets, listMyTickets, updateTicketStatus } from "@/lib/tickets.functions";
+import { getWeeklyInsights } from "@/lib/analytics.functions";
 import { useAuth } from "@/lib/auth-context";
 import { toast } from "sonner";
 
@@ -34,9 +35,16 @@ function Dashboard() {
   const isAdmin = isSuper || isDeptAdmin;
   const fn = useServerFn(isAdmin ? listAllTickets : listMyTickets);
   const updateFn = useServerFn(updateTicketStatus);
+  const insightsFn = useServerFn(getWeeklyInsights);
   const { data, isLoading, refetch } = useQuery({
     queryKey: ["tickets", role, department],
     queryFn: () => fn(),
+  });
+  const insightsQ = useQuery({
+    queryKey: ["enterprise-weekly"],
+    queryFn: () => insightsFn({ data: { scope: "all" } }),
+    enabled: isSuper,
+    staleTime: 5 * 60 * 1000,
   });
 
   const allTickets = data?.tickets ?? [];
@@ -169,6 +177,36 @@ function Dashboard() {
           </div>
         )}
       </section>
+
+      {isSuper && (
+        <section className="glass rounded-3xl p-6 border border-primary/20">
+          <div className="flex items-center gap-2 mb-3">
+            <Sparkles className="h-4 w-4 text-primary" />
+            <h3 className="font-semibold">Enterprise Weekly Summary</h3>
+          </div>
+          {insightsQ.isLoading ? (
+            <div className="text-sm text-muted-foreground">Generating executive briefing…</div>
+          ) : insightsQ.data?.empty || !insightsQ.data?.enterprise ? (
+            <div className="text-sm text-muted-foreground">No summary available yet — insufficient ticket activity.</div>
+          ) : (() => {
+            const e = insightsQ.data.enterprise;
+            return (
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 md:grid-cols-5 gap-3 text-xs">
+                  <div><div className="text-muted-foreground">Total</div><div className="font-bold text-lg">{e.total}</div></div>
+                  <div><div className="text-muted-foreground">Open</div><div className="font-bold text-lg">{e.open}</div></div>
+                  <div><div className="text-muted-foreground">Closed</div><div className="font-bold text-lg">{e.closed}</div></div>
+                  <div><div className="text-muted-foreground">Top Dept</div><div className="font-bold text-lg">{e.topDept}</div></div>
+                  <div><div className="text-muted-foreground">WoW Trend</div><div className={`font-bold text-lg ${e.wowTrendPct > 0 ? "text-warning" : e.wowTrendPct < 0 ? "text-success" : "text-muted-foreground"}`}>{e.wowTrendPct > 0 ? "↑" : e.wowTrendPct < 0 ? "↓" : "→"} {Math.abs(e.wowTrendPct)}%</div></div>
+                </div>
+                {e.insight && (
+                  <p className="text-sm leading-relaxed italic text-muted-foreground border-t border-border/50 pt-4">"{e.insight}"</p>
+                )}
+              </div>
+            );
+          })()}
+        </section>
+      )}
     </div>
   );
 }
