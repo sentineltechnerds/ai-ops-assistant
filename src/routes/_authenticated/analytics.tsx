@@ -170,7 +170,7 @@ function AnalyticsPage() {
     const resolved = dep.filter(t => t.status === "resolved");
     const open = dep.filter(t => t.status !== "resolved");
     const arr = resolved.map(t => t.resolved_at
-      ? (new Date(t.resolved_at).getTime() - new Date(t.created_at).getTime()) / 60000 : null)
+      ? (new Date(t.resolved_at as string).getTime() - new Date(t.created_at).getTime()) / 60000 : null)
       .filter((n): n is number => n !== null && n >= 0);
     const avg = arr.length ? arr.reduce((a, b) => a + b, 0) / arr.length : null;
     return { dept: d, total: dep.length, open: open.length, resolved: resolved.length, avg, workload: open.length };
