@@ -20,9 +20,13 @@ function Layout() {
   }, [session, loading, navigate]);
 
   // Employees never see the admin dashboard — bounce them to their tickets.
+  // Department admins never see the Operations Command Center — bounce them to their queue.
   useEffect(() => {
-    if (!loading && session && role === "employee" && loc.pathname === "/dashboard") {
+    if (loading || !session) return;
+    if (role === "employee" && loc.pathname === "/dashboard") {
       navigate({ to: "/tickets", replace: true });
+    } else if (role === "department_admin" && loc.pathname === "/dashboard") {
+      navigate({ to: "/queue", replace: true });
     }
   }, [role, loading, session, loc.pathname, navigate]);
 
