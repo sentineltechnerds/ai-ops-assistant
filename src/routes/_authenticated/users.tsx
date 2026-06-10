@@ -99,7 +99,7 @@ function Users() {
             <input required type="email" placeholder="Email" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} className="w-full rounded-xl bg-card border border-border px-4 py-2.5 text-sm" />
             <div className="grid grid-cols-2 gap-3">
               <select value={form.department} onChange={e => setForm({ ...form, department: e.target.value as any })} className="rounded-xl bg-card border border-border px-3 py-2.5 text-sm">
-                {["HR","IT","Finance"].map(d => <option key={d}>{d}</option>)}
+                {["HR","IT","Finance","Operations"].map(d => <option key={d}>{d}</option>)}
               </select>
               <select value={form.role} onChange={e => setForm({ ...form, role: e.target.value as any })} className="rounded-xl bg-card border border-border px-3 py-2.5 text-sm">
                 <option value="employee">Employee</option>
