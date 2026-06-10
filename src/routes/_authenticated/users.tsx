@@ -23,7 +23,7 @@ function Users() {
   });
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState("");
-  const [form, setForm] = useState({ fullName: "", email: "", department: "IT" as "HR"|"IT"|"Finance", role: "employee" as "employee"|"department_admin" });
+  const [form, setForm] = useState({ fullName: "", email: "", department: "IT" as "HR"|"IT"|"Finance"|"Operations", role: "employee" as "employee"|"department_admin" });
   const [busy, setBusy] = useState(false);
   const [credentials, setCredentials] = useState<{ email: string; password: string } | null>(null);
 
