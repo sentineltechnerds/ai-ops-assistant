@@ -2,8 +2,8 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
-type Dept = "IT" | "HR" | "Finance";
-const DEPTS: Dept[] = ["IT", "HR", "Finance"];
+type Dept = "IT" | "HR" | "Finance" | "Operations";
+const DEPTS: Dept[] = ["IT", "HR", "Finance", "Operations"];
 
 interface DeptStats {
   department: Dept;
