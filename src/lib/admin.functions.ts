@@ -40,7 +40,7 @@ export const createUser = createServerFn({ method: "POST" })
   .inputValidator((input) => z.object({
     fullName: z.string().trim().min(1).max(120),
     email: z.string().email().max(200),
-    department: z.enum(["HR", "IT", "Finance"]),
+    department: z.enum(["HR", "IT", "Finance", "Operations"]),
     role: z.enum(["employee", "department_admin"]),
   }).parse(input))
   .handler(async ({ data, context }) => {
