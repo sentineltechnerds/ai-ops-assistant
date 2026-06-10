@@ -102,6 +102,7 @@ const queueMap: Record<string, string> = {
   HR: "HR Queue",
   IT: "IT Support Queue",
   Finance: "Finance Approval Queue",
+  Operations: "Operations Queue",
 };
 
 export const submitTicket = createServerFn({ method: "POST" })
