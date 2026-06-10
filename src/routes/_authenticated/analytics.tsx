@@ -10,13 +10,14 @@ import {
 import { Ticket, CheckCircle2, Clock, AlertCircle, TrendingUp, TrendingDown, Minus, Sparkles } from "lucide-react";
 import { listAllTickets } from "@/lib/tickets.functions";
 import { getWeeklyInsights } from "@/lib/analytics.functions";
-import { useAuth } from "@/lib/auth-context";
+import { useAuth, type Department } from "@/lib/auth-context";
 
 export const Route = createFileRoute("/_authenticated/analytics")({
   head: () => ({ meta: [{ title: "Analytics — Aurora" }] }),
   component: AnalyticsPage,
 });
 
+const ALL_DEPTS: Department[] = ["IT", "HR", "Finance", "Operations"];
 const CHART_COLORS = ["oklch(0.55 0.14 280)", "oklch(0.74 0.09 285)", "oklch(0.78 0.16 70)", "oklch(0.7 0.14 160)"];
 type RangeKey = "today" | "7d" | "30d" | "all";
 
@@ -45,41 +46,52 @@ function fmtMin(m: number | null) {
 }
 
 function AnalyticsPage() {
-  const { role } = useAuth();
+  const { role, department } = useAuth();
   const navigate = useNavigate();
   useEffect(() => {
     if (role === "employee") navigate({ to: "/tickets", replace: true });
   }, [role, navigate]);
 
+  const isSuper = role === "super_admin";
+  const isDeptAdmin = role === "department_admin";
+
   const fnTickets = useServerFn(listAllTickets);
   const fnInsights = useServerFn(getWeeklyInsights);
   const [range, setRange] = useState<RangeKey>("7d");
-  const [deptFilter, setDeptFilter] = useState<"ALL" | "IT" | "HR" | "Finance">("ALL");
+  const [deptFilter, setDeptFilter] = useState<"ALL" | Department>("ALL");
 
   const ticketsQ = useQuery({ queryKey: ["analytics-tickets"], queryFn: () => fnTickets() });
   const insightsQ = useQuery({
-    queryKey: ["analytics-insights"],
-    queryFn: () => fnInsights({ data: { scope: "all" } }),
+    queryKey: ["analytics-insights", role, department],
+    queryFn: () =>
+      isDeptAdmin && department
+        ? fnInsights({ data: { scope: "department", department } })
+        : fnInsights({ data: { scope: "all" } }),
     staleTime: 5 * 60 * 1000,
   });
 
-  const allTickets = ticketsQ.data?.tickets ?? [];
+  const rawTickets = ticketsQ.data?.tickets ?? [];
+  // Department admin: lock to own department (RLS already enforces server-side).
+  const scopedAll = useMemo(() =>
+    isDeptAdmin && department ? rawTickets.filter(t => t.department === department) : rawTickets,
+  [rawTickets, isDeptAdmin, department]);
+
+  const visibleDepts: Department[] = isDeptAdmin && department ? [department] : ALL_DEPTS;
 
   const tickets = useMemo(() => {
     const start = rangeStart(range);
-    return allTickets.filter(t => {
+    return scopedAll.filter(t => {
       if (start !== null && new Date(t.created_at).getTime() < start) return false;
-      if (deptFilter !== "ALL" && t.department !== deptFilter) return false;
+      if (isSuper && deptFilter !== "ALL" && t.department !== deptFilter) return false;
       return true;
     });
-  }, [allTickets, range, deptFilter]);
+  }, [scopedAll, range, deptFilter, isSuper]);
 
-  // KPIs + WoW
   const kpis = useMemo(() => {
     const now = Date.now();
     const wk = 7 * 24 * 60 * 60 * 1000;
-    const tw = allTickets.filter(t => now - new Date(t.created_at).getTime() <= wk);
-    const pw = allTickets.filter(t => {
+    const tw = scopedAll.filter(t => now - new Date(t.created_at).getTime() <= wk);
+    const pw = scopedAll.filter(t => {
       const d = now - new Date(t.created_at).getTime();
       return d > wk && d <= 2 * wk;
     });
@@ -91,7 +103,6 @@ function AnalyticsPage() {
       return v.length ? v.reduce((a, b) => a + b, 0) / v.length : null;
     };
     const pct = (a: number, b: number) => b === 0 ? (a > 0 ? 100 : 0) : Math.round(((a - b) / b) * 100);
-
     return {
       total: { v: tickets.length, t: pct(tw.length, pw.length) },
       open: {
@@ -111,48 +122,43 @@ function AnalyticsPage() {
         })(),
       },
     };
-  }, [tickets, allTickets]);
+  }, [tickets, scopedAll]);
 
-  // Volume line chart — bucket by day
+  // Volume line chart — Open, In Progress, Escalated, Resolved
   const volumeData = useMemo(() => {
     const start = rangeStart(range);
     const days = range === "today" ? 1 : range === "7d" ? 7 : range === "30d" ? 30 : 30;
-    const buckets: { date: string; ts: number; created: number; resolved: number; open: number }[] = [];
+    const buckets: { date: string; ts: number; open: number; in_progress: number; escalated: number; resolved: number }[] = [];
     const today = new Date(); today.setHours(0, 0, 0, 0);
     for (let i = days - 1; i >= 0; i--) {
       const d = new Date(today); d.setDate(today.getDate() - i);
       buckets.push({
         date: d.toLocaleDateString(undefined, { month: "short", day: "numeric" }),
-        ts: d.getTime(), created: 0, resolved: 0, open: 0,
+        ts: d.getTime(), open: 0, in_progress: 0, escalated: 0, resolved: 0,
       });
     }
     const inRange = (t: any) => {
       if (start !== null && new Date(t.created_at).getTime() < start) return false;
-      if (deptFilter !== "ALL" && t.department !== deptFilter) return false;
+      if (isSuper && deptFilter !== "ALL" && t.department !== deptFilter) return false;
       return true;
     };
-    for (const t of allTickets) {
+    for (const t of scopedAll) {
       if (!inRange(t)) continue;
       const day = new Date(t.created_at); day.setHours(0, 0, 0, 0);
       const b = buckets.find(x => x.ts === day.getTime());
-      if (b) {
-        b.created++;
-        if (t.status === "resolved") b.resolved++;
-        else b.open++;
-      }
+      if (!b) continue;
+      if (t.status === "resolved") b.resolved++;
+      else if (t.status === "escalated") b.escalated++;
+      else if (t.status === "in_progress") b.in_progress++;
+      else b.open++;
     }
     return buckets;
-  }, [allTickets, range, deptFilter]);
+  }, [scopedAll, range, deptFilter, isSuper]);
 
-  // Pie data
-  const catData = [
-    { name: "IT", value: tickets.filter(t => t.department === "IT").length },
-    { name: "HR", value: tickets.filter(t => t.department === "HR").length },
-    { name: "Finance", value: tickets.filter(t => t.department === "Finance").length },
-  ];
+  const catData = visibleDepts.map(d => ({ name: d, value: tickets.filter(t => t.department === d).length }));
 
-  // Response time bar chart per dept
-  const respData = ["IT", "HR", "Finance"].map(d => {
+  // Response time per department — Super Admin only
+  const respData = ALL_DEPTS.map(d => {
     const arr = tickets.filter(t => t.department === d && t.resolved_at)
       .map(t => (new Date(t.resolved_at as string).getTime() - new Date(t.created_at).getTime()) / 60000)
       .filter(n => n >= 0);
@@ -164,8 +170,7 @@ function AnalyticsPage() {
     };
   });
 
-  // Dept performance table
-  const perfRows = ["IT", "HR", "Finance"].map(d => {
+  const perfRows = visibleDepts.map(d => {
     const dep = tickets.filter(t => t.department === d);
     const resolved = dep.filter(t => t.status === "resolved");
     const open = dep.filter(t => t.status !== "resolved");
@@ -177,7 +182,7 @@ function AnalyticsPage() {
   });
 
   const insights = insightsQ.data;
-  const emptyState = !ticketsQ.isLoading && allTickets.length === 0;
+  const emptyState = !ticketsQ.isLoading && scopedAll.length === 0;
 
   if (emptyState) {
     return (
@@ -187,7 +192,9 @@ function AnalyticsPage() {
           <p className="text-sm text-muted-foreground mt-1">Operational reporting & AI insights.</p>
         </header>
         <div className="glass rounded-3xl p-12 text-center text-sm text-muted-foreground">
-          No analytics are available yet. Analytics and weekly insights will be generated automatically as ticket activity increases.
+          {isDeptAdmin
+            ? "No analytics are available yet for your department. Insights will appear automatically as tickets are submitted."
+            : "No analytics are available yet. Insights will appear automatically as ticket activity increases."}
         </div>
       </div>
     );
@@ -205,7 +212,9 @@ function AnalyticsPage() {
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <h1 className="font-display text-3xl font-bold">Analytics</h1>
-          <p className="text-sm text-muted-foreground mt-1">Operational reporting & weekly AI insights.</p>
+          <p className="text-sm text-muted-foreground mt-1">
+            {isDeptAdmin ? `${department} department reporting & weekly AI insights.` : "Operational reporting & weekly AI insights."}
+          </p>
         </div>
         <div className="flex flex-wrap gap-2">
           <div className="glass rounded-full p-1 flex text-xs">
@@ -216,17 +225,16 @@ function AnalyticsPage() {
               </button>
             ))}
           </div>
-          <select value={deptFilter} onChange={e => setDeptFilter(e.target.value as any)}
-            className="glass rounded-full px-3 py-1.5 text-xs font-medium bg-transparent">
-            <option value="ALL">All departments</option>
-            <option value="IT">IT</option>
-            <option value="HR">HR</option>
-            <option value="Finance">Finance</option>
-          </select>
+          {isSuper && (
+            <select value={deptFilter} onChange={e => setDeptFilter(e.target.value as any)}
+              className="glass rounded-full px-3 py-1.5 text-xs font-medium bg-transparent">
+              <option value="ALL">All departments</option>
+              {ALL_DEPTS.map(d => <option key={d} value={d}>{d}</option>)}
+            </select>
+          )}
         </div>
       </header>
 
-      {/* KPI Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {kpiCards.map((c, i) => {
           const t = trendIcon(c.trend);
@@ -245,7 +253,6 @@ function AnalyticsPage() {
         })}
       </div>
 
-      {/* Volume + Pie */}
       <div className="grid lg:grid-cols-3 gap-5">
         <div className="glass rounded-3xl p-6 lg:col-span-2">
           <h3 className="font-semibold mb-4">Ticket volume</h3>
@@ -256,9 +263,10 @@ function AnalyticsPage() {
               <YAxis fontSize={11} stroke="oklch(0.5 0.04 270)" />
               <Tooltip contentStyle={{ background: "oklch(1 0 0)", border: "1px solid oklch(0.91 0.015 280)", borderRadius: 12 }} />
               <Legend wrapperStyle={{ fontSize: 12 }} />
-              <Line type="monotone" dataKey="created" stroke={CHART_COLORS[0]} strokeWidth={2} name="Created" dot={false} />
+              <Line type="monotone" dataKey="open" stroke={CHART_COLORS[0]} strokeWidth={2} name="Open" dot={false} />
+              <Line type="monotone" dataKey="in_progress" stroke={CHART_COLORS[2]} strokeWidth={2} name="In Progress" dot={false} />
+              <Line type="monotone" dataKey="escalated" stroke="oklch(0.6 0.2 25)" strokeWidth={2} name="Escalated" dot={false} />
               <Line type="monotone" dataKey="resolved" stroke={CHART_COLORS[3]} strokeWidth={2} name="Resolved" dot={false} />
-              <Line type="monotone" dataKey="open" stroke={CHART_COLORS[2]} strokeWidth={2} name="Open" dot={false} />
             </LineChart>
           </ResponsiveContainer>
         </div>
@@ -267,7 +275,7 @@ function AnalyticsPage() {
           <ResponsiveContainer width="100%" height={260}>
             <PieChart>
               <Pie data={catData} dataKey="value" nameKey="name" innerRadius={50} outerRadius={90} paddingAngle={3} label={(e: any) => `${e.name} ${Math.round((e.percent || 0) * 100)}%`}>
-                {catData.map((_, i) => <Cell key={i} fill={CHART_COLORS[i]} />)}
+                {catData.map((_, i) => <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />)}
               </Pie>
               <Tooltip />
             </PieChart>
@@ -275,24 +283,24 @@ function AnalyticsPage() {
         </div>
       </div>
 
-      {/* Response time */}
-      <div className="glass rounded-3xl p-6">
-        <h3 className="font-semibold mb-4">Response time by department (minutes)</h3>
-        <ResponsiveContainer width="100%" height={220}>
-          <BarChart data={respData} layout="vertical">
-            <CartesianGrid strokeDasharray="3 3" stroke="oklch(0.91 0.015 280)" />
-            <XAxis type="number" fontSize={11} stroke="oklch(0.5 0.04 270)" />
-            <YAxis dataKey="department" type="category" fontSize={12} stroke="oklch(0.5 0.04 270)" />
-            <Tooltip contentStyle={{ background: "oklch(1 0 0)", border: "1px solid oklch(0.91 0.015 280)", borderRadius: 12 }} />
-            <Legend wrapperStyle={{ fontSize: 12 }} />
-            <Bar dataKey="fastest" fill={CHART_COLORS[3]} name="Fastest" radius={[0, 6, 6, 0]} />
-            <Bar dataKey="avg" fill={CHART_COLORS[0]} name="Average" radius={[0, 6, 6, 0]} />
-            <Bar dataKey="slowest" fill={CHART_COLORS[2]} name="Slowest" radius={[0, 6, 6, 0]} />
-          </BarChart>
-        </ResponsiveContainer>
-      </div>
+      {isSuper && (
+        <div className="glass rounded-3xl p-6">
+          <h3 className="font-semibold mb-4">Response time by department (minutes)</h3>
+          <ResponsiveContainer width="100%" height={240}>
+            <BarChart data={respData} layout="vertical">
+              <CartesianGrid strokeDasharray="3 3" stroke="oklch(0.91 0.015 280)" />
+              <XAxis type="number" fontSize={11} stroke="oklch(0.5 0.04 270)" />
+              <YAxis dataKey="department" type="category" fontSize={12} stroke="oklch(0.5 0.04 270)" />
+              <Tooltip contentStyle={{ background: "oklch(1 0 0)", border: "1px solid oklch(0.91 0.015 280)", borderRadius: 12 }} />
+              <Legend wrapperStyle={{ fontSize: 12 }} />
+              <Bar dataKey="fastest" fill={CHART_COLORS[3]} name="Fastest" radius={[0, 6, 6, 0]} />
+              <Bar dataKey="avg" fill={CHART_COLORS[0]} name="Average" radius={[0, 6, 6, 0]} />
+              <Bar dataKey="slowest" fill={CHART_COLORS[2]} name="Slowest" radius={[0, 6, 6, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      )}
 
-      {/* Department performance table */}
       <div className="glass rounded-3xl p-6">
         <h3 className="font-semibold mb-4">Department performance</h3>
         <div className="overflow-x-auto">
@@ -323,7 +331,6 @@ function AnalyticsPage() {
         </div>
       </div>
 
-      {/* Weekly AI Insight cards */}
       <div>
         <div className="flex items-center gap-2 mb-4">
           <Sparkles className="h-4 w-4 text-primary" />
@@ -331,10 +338,10 @@ function AnalyticsPage() {
         </div>
         {insightsQ.isLoading ? (
           <div className="text-sm text-muted-foreground">Generating insights…</div>
-        ) : insights?.empty || !insights ? (
+        ) : insights?.empty || !insights || insights.departments.length === 0 ? (
           <div className="text-sm text-muted-foreground">No insights available yet.</div>
         ) : (
-          <div className="grid md:grid-cols-3 gap-4">
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
             {insights.departments.map(d => {
               const t = trendIcon(d.wowTrendPct);
               return (
