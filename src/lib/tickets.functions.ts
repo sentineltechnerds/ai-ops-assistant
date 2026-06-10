@@ -6,22 +6,25 @@ const KEYWORDS: Record<string, string[]> = {
   HR: ["leave", "salary", "recruit", "benefit", "onboard", "payroll", "employee", "resign", "hr", "holiday", "vacation"],
   IT: ["laptop", "password", "email", "software", "vpn", "internet", "network", "server", "access", "login", "wifi", "computer", "outage", "system down"],
   Finance: ["invoice", "reimburse", "payment", "budget", "supplier", "purchase", "expense", "claim", "finance", "accounting", "refund"],
+  Operations: ["facility", "facilities", "office", "logistics", "shipment", "warehouse", "delivery", "operations", "maintenance", "equipment", "vendor", "inventory", "supply chain", "procurement"],
 };
 
 const CRITICAL_WORDS = ["server down", "server is offline", "offline", "outage", "cannot access payroll", "payroll down", "system down", "critical", "urgent", "emergency", "breach", "data loss", "production down"];
 const HIGH_WORDS = ["cannot connect", "cannot access", "blocked", "broken", "asap", "important", "stuck", "failing", "not working"];
 const LOW_WORDS = ["request", "supplies", "schedule", "info", "stationery", "general inquiry"];
 
+type Cat = "HR" | "IT" | "Finance" | "Operations";
+
 function keywordClassify(title: string, description: string) {
   const text = `${title} ${description}`.toLowerCase();
-  const scores: Record<string, number> = { HR: 0, IT: 0, Finance: 0 };
+  const scores: Record<string, number> = { HR: 0, IT: 0, Finance: 0, Operations: 0 };
   for (const [cat, words] of Object.entries(KEYWORDS)) {
     for (const w of words) if (text.includes(w)) scores[cat]++;
   }
-  let best: "HR" | "IT" | "Finance" = "IT";
+  let best: Cat = "IT";
   let max = 0;
   for (const [cat, s] of Object.entries(scores)) {
-    if (s > max) { max = s; best = cat as typeof best; }
+    if (s > max) { max = s; best = cat as Cat; }
   }
   let priority: "low" | "medium" | "high" | "critical" = "medium";
   if (CRITICAL_WORDS.some(w => text.includes(w))) priority = "critical";
