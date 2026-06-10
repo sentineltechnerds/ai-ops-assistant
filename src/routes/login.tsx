@@ -31,10 +31,6 @@ function Login() {
     toast.success("Welcome back");
   };
 
-  const google = async () => {
-    const r = await lovable.auth.signInWithOAuth("google", { redirect_uri: window.location.origin });
-    if (r.error) toast.error("Google sign-in failed");
-  };
 
   return (
     <div className="min-h-screen bg-gradient-hero flex items-center justify-center p-6">
