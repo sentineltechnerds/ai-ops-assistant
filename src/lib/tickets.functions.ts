@@ -6,22 +6,25 @@ const KEYWORDS: Record<string, string[]> = {
   HR: ["leave", "salary", "recruit", "benefit", "onboard", "payroll", "employee", "resign", "hr", "holiday", "vacation"],
   IT: ["laptop", "password", "email", "software", "vpn", "internet", "network", "server", "access", "login", "wifi", "computer", "outage", "system down"],
   Finance: ["invoice", "reimburse", "payment", "budget", "supplier", "purchase", "expense", "claim", "finance", "accounting", "refund"],
+  Operations: ["facility", "facilities", "office", "logistics", "shipment", "warehouse", "delivery", "operations", "maintenance", "equipment", "vendor", "inventory", "supply chain", "procurement"],
 };
 
 const CRITICAL_WORDS = ["server down", "server is offline", "offline", "outage", "cannot access payroll", "payroll down", "system down", "critical", "urgent", "emergency", "breach", "data loss", "production down"];
 const HIGH_WORDS = ["cannot connect", "cannot access", "blocked", "broken", "asap", "important", "stuck", "failing", "not working"];
 const LOW_WORDS = ["request", "supplies", "schedule", "info", "stationery", "general inquiry"];
 
+type Cat = "HR" | "IT" | "Finance" | "Operations";
+
 function keywordClassify(title: string, description: string) {
   const text = `${title} ${description}`.toLowerCase();
-  const scores: Record<string, number> = { HR: 0, IT: 0, Finance: 0 };
+  const scores: Record<string, number> = { HR: 0, IT: 0, Finance: 0, Operations: 0 };
   for (const [cat, words] of Object.entries(KEYWORDS)) {
     for (const w of words) if (text.includes(w)) scores[cat]++;
   }
-  let best: "HR" | "IT" | "Finance" = "IT";
+  let best: Cat = "IT";
   let max = 0;
   for (const [cat, s] of Object.entries(scores)) {
-    if (s > max) { max = s; best = cat as typeof best; }
+    if (s > max) { max = s; best = cat as Cat; }
   }
   let priority: "low" | "medium" | "high" | "critical" = "medium";
   if (CRITICAL_WORDS.some(w => text.includes(w))) priority = "critical";
@@ -60,7 +63,7 @@ async function aiClassify(title: string, description: string) {
             parameters: {
               type: "object",
               properties: {
-                category: { type: "string", enum: ["HR", "IT", "Finance"] },
+                category: { type: "string", enum: ["HR", "IT", "Finance", "Operations"] },
                 priority: { type: "string", enum: ["low", "medium", "high", "critical"] },
                 confidence: { type: "number", description: "0 to 1" },
                 summary: { type: "string", description: "1-2 sentence summary for ops manager" },
@@ -83,7 +86,7 @@ async function aiClassify(title: string, description: string) {
     if (!args) return keywordClassify(title, description);
     const parsed = JSON.parse(args);
     return {
-      category: parsed.category as "HR" | "IT" | "Finance",
+      category: parsed.category as Cat,
       priority: parsed.priority as "low" | "medium" | "high" | "critical",
       confidence: Number(parsed.confidence) || 0.75,
       summary: String(parsed.summary || "").slice(0, 300),
@@ -99,6 +102,7 @@ const queueMap: Record<string, string> = {
   HR: "HR Queue",
   IT: "IT Support Queue",
   Finance: "Finance Approval Queue",
+  Operations: "Operations Queue",
 };
 
 export const submitTicket = createServerFn({ method: "POST" })

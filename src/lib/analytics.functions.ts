@@ -2,8 +2,8 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
-type Dept = "IT" | "HR" | "Finance";
-const DEPTS: Dept[] = ["IT", "HR", "Finance"];
+type Dept = "IT" | "HR" | "Finance" | "Operations";
+const DEPTS: Dept[] = ["IT", "HR", "Finance", "Operations"];
 
 interface DeptStats {
   department: Dept;
@@ -82,8 +82,11 @@ async function aiInsight(prompt: string): Promise<string> {
 
 export const getWeeklyInsights = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((i) => z.object({ scope: z.enum(["all", "department"]).default("all") }).parse(i))
-  .handler(async ({ context }) => {
+  .inputValidator((i) => z.object({
+    scope: z.enum(["all", "department"]).default("all"),
+    department: z.enum(["IT", "HR", "Finance", "Operations"]).optional(),
+  }).parse(i))
+  .handler(async ({ data, context }) => {
     const { supabase } = context;
     const { data: tickets, error } = await supabase.from("tickets").select("*");
     if (error) throw new Error(error.message);
@@ -93,7 +96,8 @@ export const getWeeklyInsights = createServerFn({ method: "POST" })
       return { empty: true as const, departments: [], enterprise: null };
     }
 
-    const perDept = DEPTS.map(d => summarizeDept(list, d));
+    const targetDepts: Dept[] = data.scope === "department" && data.department ? [data.department] : DEPTS;
+    const perDept = targetDepts.map(d => summarizeDept(list, d));
 
     const departments = await Promise.all(perDept.map(async s => {
       const prompt = `Department: ${s.department}\nTotal tickets: ${s.total}\nResolved: ${s.resolved}\nOpen: ${s.open}\nAverage response time: ${s.avgResponseMinutes ? Math.round(s.avgResponseMinutes) + " minutes" : "n/a"}\nMost common request: ${s.topRequest}\nWeek-over-week change: ${s.wowTrendPct}%\n\nWrite an Operational Observation (1-2 sentences) and an AI Recommendation (1 sentence).`;

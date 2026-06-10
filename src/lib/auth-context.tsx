@@ -3,7 +3,7 @@ import type { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 
 export type AppRole = "super_admin" | "department_admin" | "employee";
-export type Department = "HR" | "IT" | "Finance";
+export type Department = "HR" | "IT" | "Finance" | "Operations";
 
 interface AuthCtx {
   session: Session | null;
