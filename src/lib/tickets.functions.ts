@@ -2,6 +2,8 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
+
+
 const KEYWORDS: Record<string, string[]> = {
   HR: ["leave", "salary", "recruit", "benefit", "onboard", "payroll", "employee", "resign", "hr", "holiday", "vacation"],
   IT: ["laptop", "password", "email", "software", "vpn", "internet", "network", "server", "access", "login", "wifi", "computer", "outage", "system down"],
@@ -166,4 +168,88 @@ export const updateTicketStatus = createServerFn({ method: "POST" })
     const { error } = await supabase.from("tickets").update({ status: data.status }).eq("id", data.id);
     if (error) throw new Error(error.message);
     return { ok: true };
+  });
+
+// ============ Sample data seeding (super admin only) ============
+
+const SAMPLE_THEMES: Record<Cat, { title: string; description: string }[]> = {
+  IT: [
+    { title: "Password reset for corporate account", description: "I am locked out of my workstation after multiple failed login attempts. Please reset my password so I can resume work." },
+    { title: "Email not syncing on Outlook", description: "My Outlook client has stopped syncing new mail since yesterday. Webmail works fine but desktop is stuck." },
+    { title: "Network connectivity dropping repeatedly", description: "Wifi in the east wing keeps dropping every few minutes, impacting video calls and access to shared drives." },
+    { title: "Software installation request — Adobe Acrobat", description: "I need Adobe Acrobat Pro installed on my laptop to handle contract markups for the legal team." },
+    { title: "Access request for shared finance drive", description: "Please grant me read access to the finance reporting folder so I can pull figures for the monthly review." },
+  ],
+  HR: [
+    { title: "Leave application for annual vacation", description: "Submitting a leave application for ten working days next month. Cover arrangements have been confirmed with my manager." },
+    { title: "Payroll query — missing overtime hours", description: "My last payslip is missing the overtime hours logged on the previous weekend rotation. Please review." },
+    { title: "Employee benefits enrolment question", description: "I would like clarification on the new health plan options and how to enrol my dependents before the deadline." },
+    { title: "Recruitment support for open analyst role", description: "Requesting support from talent acquisition to fast-track shortlisting for the open data analyst position." },
+    { title: "Employee onboarding paperwork", description: "New joiner starting on Monday — please prepare the onboarding pack and provisioning checklist." },
+  ],
+  Finance: [
+    { title: "Invoice processing delay from supplier", description: "Supplier invoice ref 4421 has been pending approval for over two weeks. Vendor is following up daily." },
+    { title: "Budget approval for Q1 marketing spend", description: "Requesting approval on the proposed Q1 marketing budget. Detailed breakdown attached for review." },
+    { title: "Expense claim for client travel", description: "Submitting expense claim covering flights, accommodation and meals from last week's client visit." },
+    { title: "Purchase order for new office laptops", description: "Need a purchase order raised for the laptop refresh cycle as previously agreed in the capex plan." },
+    { title: "Reimbursement for training course", description: "Requesting reimbursement of the certification course fee that was pre-approved by my line manager." },
+  ],
+  Operations: [
+    { title: "Office maintenance — air conditioning fault", description: "The air conditioning on the third floor is not cooling. Temperature is rising and impacting staff comfort." },
+    { title: "Equipment failure — printer in copy room", description: "The main printer in the copy room is jamming repeatedly and showing a hardware error code." },
+    { title: "Transport support for client visit", description: "Need transport arranged for a team of four for an off-site client meeting on Thursday morning." },
+    { title: "Workspace allocation for new team", description: "Request workspace allocation for the new analytics team of six joining at the start of next month." },
+    { title: "Facilities request for meeting room setup", description: "Please prepare boardroom A with video conferencing and refreshments for the leadership review." },
+  ],
+};
+
+export const seedSampleTickets = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { supabase, userId } = context;
+    const { data: roleRow } = await supabase.from("user_roles").select("role").eq("user_id", userId).maybeSingle();
+    if (roleRow?.role !== "super_admin") throw new Error("Forbidden: super admin only");
+
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    const { data: profiles } = await supabaseAdmin
+      .from("profiles")
+      .select("id, full_name, email, is_active")
+      .eq("is_active", true);
+    const employees = (profiles ?? []).filter(p => !!p.id);
+    if (employees.length === 0) throw new Error("No active employees found to attribute sample tickets to.");
+
+    const depts: Cat[] = ["IT", "HR", "Finance", "Operations"];
+    let created = 0;
+    const rows: any[] = [];
+    let idx = 0;
+    for (const dept of depts) {
+      for (const theme of SAMPLE_THEMES[dept]) {
+        const emp = employees[idx % employees.length];
+        idx++;
+        const ai = await aiClassify(theme.title, theme.description);
+        // Force the department to match the seed theme so distribution is balanced.
+        const category: Cat = dept;
+        rows.push({
+          employee_id: emp.id,
+          employee_name: emp.full_name || emp.email || "Employee",
+          department: category,
+          title: theme.title,
+          description: theme.description,
+          priority: ai.priority,
+          ai_suggested_priority: ai.priority,
+          predicted_category: category,
+          confidence_score: ai.confidence,
+          ai_summary: ai.summary,
+          ai_fallback: ai.fallback,
+          assigned_queue: queueMap[category],
+          status: "new",
+        });
+      }
+    }
+
+    const { error } = await supabaseAdmin.from("tickets").insert(rows);
+    if (error) throw new Error(error.message);
+    created = rows.length;
+    return { ok: true, created };
   });

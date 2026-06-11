@@ -2,12 +2,13 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { motion } from "framer-motion";
-import { Ticket, Users, Cpu, DollarSign, Wrench, AlertTriangle, CheckCircle2, TrendingUp, Sparkles } from "lucide-react";
+import { Ticket, Users, Cpu, DollarSign, Wrench, AlertTriangle, CheckCircle2, TrendingUp, Sparkles, Building2, Database } from "lucide-react";
 import { BarChart, Bar, ResponsiveContainer, XAxis, YAxis, Tooltip, PieChart, Pie, Cell } from "recharts";
-import { listAllTickets, listMyTickets, updateTicketStatus } from "@/lib/tickets.functions";
+import { listAllTickets, listMyTickets, updateTicketStatus, seedSampleTickets } from "@/lib/tickets.functions";
 import { getWeeklyInsights } from "@/lib/analytics.functions";
 import { useAuth } from "@/lib/auth-context";
 import { toast } from "sonner";
+import { useState } from "react";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({ meta: [{ title: "Dashboard — Aurora" }] }),
@@ -36,6 +37,8 @@ function Dashboard() {
   const fn = useServerFn(isAdmin ? listAllTickets : listMyTickets);
   const updateFn = useServerFn(updateTicketStatus);
   const insightsFn = useServerFn(getWeeklyInsights);
+  const seedFn = useServerFn(seedSampleTickets);
+  const [seeding, setSeeding] = useState(false);
   const { data, isLoading, refetch } = useQuery({
     queryKey: ["tickets", role, department],
     queryFn: () => fn(),
@@ -55,9 +58,10 @@ function Dashboard() {
 
   const stats = {
     total: tickets.length,
-    HR: tickets.filter(t => t.predicted_category === "HR" || t.department === "HR").length,
-    IT: tickets.filter(t => t.predicted_category === "IT" || t.department === "IT").length,
-    Finance: tickets.filter(t => t.predicted_category === "Finance" || t.department === "Finance").length,
+    HR: tickets.filter(t => t.department === "HR").length,
+    IT: tickets.filter(t => t.department === "IT").length,
+    Finance: tickets.filter(t => t.department === "Finance").length,
+    Operations: tickets.filter(t => t.department === "Operations").length,
     critical: tickets.filter(t => t.priority === "critical").length,
     resolved: tickets.filter(t => t.status === "resolved").length,
     escalated: tickets.filter(t => t.status === "escalated").length,
@@ -67,6 +71,7 @@ function Dashboard() {
     { name: "HR", value: stats.HR },
     { name: "IT", value: stats.IT },
     { name: "Finance", value: stats.Finance },
+    { name: "Operations", value: stats.Operations },
   ];
 
   const sorted = [...tickets].sort((a, b) => {
@@ -82,11 +87,22 @@ function Dashboard() {
     } catch (e: any) { toast.error(e.message); }
   };
 
+  const handleSeed = async () => {
+    setSeeding(true);
+    try {
+      const res = await seedFn();
+      toast.success(`Generated ${res.created} sample tickets`);
+      refetch();
+    } catch (e: any) { toast.error(e.message); }
+    finally { setSeeding(false); }
+  };
+
   const cards = [
     { label: "Total Tickets", value: stats.total, icon: Ticket, color: "text-primary" },
     { label: "HR", value: stats.HR, icon: Users, color: "text-accent-foreground" },
     { label: "IT", value: stats.IT, icon: Cpu, color: "text-primary" },
     { label: "Finance", value: stats.Finance, icon: DollarSign, color: "text-warning" },
+    { label: "Operations", value: stats.Operations, icon: Building2, color: "text-success" },
     { label: "Critical", value: stats.critical, icon: AlertTriangle, color: "text-critical" },
     { label: "Escalated", value: stats.escalated, icon: Wrench, color: "text-warning" },
     { label: "Resolved", value: stats.resolved, icon: CheckCircle2, color: "text-success" },
@@ -99,12 +115,21 @@ function Dashboard() {
           <h1 className="font-display text-3xl font-bold">Operations Command Center</h1>
           <p className="text-sm text-muted-foreground mt-1">{isAdmin ? "Full visibility across every queue." : "Your personal operations dashboard."}</p>
         </div>
-        <div className="inline-flex items-center gap-2 glass rounded-full px-3 py-1.5 text-xs">
-          <span className="h-2 w-2 rounded-full bg-success animate-pulse" /> Live · {tickets.length} tickets
+        <div className="flex items-center gap-2">
+          {isSuper && (
+            <button onClick={handleSeed} disabled={seeding}
+              className="inline-flex items-center gap-2 glass rounded-full px-3 py-1.5 text-xs font-medium hover:bg-primary/10 transition disabled:opacity-60">
+              <Database className="h-3.5 w-3.5" />
+              {seeding ? "Generating…" : "Generate sample data"}
+            </button>
+          )}
+          <div className="inline-flex items-center gap-2 glass rounded-full px-3 py-1.5 text-xs">
+            <span className="h-2 w-2 rounded-full bg-success animate-pulse" /> Live · {tickets.length} tickets
+          </div>
         </div>
       </header>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3">
         {cards.map((c, i) => (
           <motion.div key={c.label} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.04 }} className="glass rounded-2xl p-4">
             <c.icon className={`h-4 w-4 ${c.color}`} />
