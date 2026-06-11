@@ -2,12 +2,13 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { motion } from "framer-motion";
-import { Ticket, Users, Cpu, DollarSign, Wrench, AlertTriangle, CheckCircle2, TrendingUp, Sparkles } from "lucide-react";
+import { Ticket, Users, Cpu, DollarSign, Wrench, AlertTriangle, CheckCircle2, TrendingUp, Sparkles, Building2, Database } from "lucide-react";
 import { BarChart, Bar, ResponsiveContainer, XAxis, YAxis, Tooltip, PieChart, Pie, Cell } from "recharts";
-import { listAllTickets, listMyTickets, updateTicketStatus } from "@/lib/tickets.functions";
+import { listAllTickets, listMyTickets, updateTicketStatus, seedSampleTickets } from "@/lib/tickets.functions";
 import { getWeeklyInsights } from "@/lib/analytics.functions";
 import { useAuth } from "@/lib/auth-context";
 import { toast } from "sonner";
+import { useState } from "react";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({ meta: [{ title: "Dashboard — Aurora" }] }),
