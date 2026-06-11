@@ -115,12 +115,21 @@ function Dashboard() {
           <h1 className="font-display text-3xl font-bold">Operations Command Center</h1>
           <p className="text-sm text-muted-foreground mt-1">{isAdmin ? "Full visibility across every queue." : "Your personal operations dashboard."}</p>
         </div>
-        <div className="inline-flex items-center gap-2 glass rounded-full px-3 py-1.5 text-xs">
-          <span className="h-2 w-2 rounded-full bg-success animate-pulse" /> Live · {tickets.length} tickets
+        <div className="flex items-center gap-2">
+          {isSuper && (
+            <button onClick={handleSeed} disabled={seeding}
+              className="inline-flex items-center gap-2 glass rounded-full px-3 py-1.5 text-xs font-medium hover:bg-primary/10 transition disabled:opacity-60">
+              <Database className="h-3.5 w-3.5" />
+              {seeding ? "Generating…" : "Generate sample data"}
+            </button>
+          )}
+          <div className="inline-flex items-center gap-2 glass rounded-full px-3 py-1.5 text-xs">
+            <span className="h-2 w-2 rounded-full bg-success animate-pulse" /> Live · {tickets.length} tickets
+          </div>
         </div>
       </header>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3">
         {cards.map((c, i) => (
           <motion.div key={c.label} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.04 }} className="glass rounded-2xl p-4">
             <c.icon className={`h-4 w-4 ${c.color}`} />
