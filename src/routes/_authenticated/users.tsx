@@ -79,10 +79,22 @@ function Users() {
                 <td className="p-3 text-xs uppercase tracking-wider font-semibold">{u.role}</td>
                 <td className="p-3"><span className={`text-xs px-2 py-1 rounded-full ${u.is_active ? "bg-success/15 text-success" : "bg-muted text-muted-foreground"}`}>{u.is_active ? "Active" : "Disabled"}</span></td>
                 <td className="p-3 text-right">
-                  <button onClick={async () => { await toggleFn({ data: { userId: u.id, isActive: !u.is_active } }); toast.success("Updated"); refetch(); }}
-                    className="inline-flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg bg-secondary hover:bg-secondary/70">
-                    <Power className="h-3 w-3" /> {u.is_active ? "Deactivate" : "Activate"}
-                  </button>
+                  {u.role === "super_admin" ? (
+                    <span title="Super Admin accounts cannot be deactivated." className="inline-flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg bg-muted text-muted-foreground cursor-not-allowed">
+                      <Power className="h-3 w-3" /> Protected
+                    </span>
+                  ) : (
+                    <button onClick={async () => {
+                      try {
+                        await toggleFn({ data: { userId: u.id, isActive: !u.is_active } });
+                        toast.success("Updated");
+                        refetch();
+                      } catch (e: any) { toast.error(e.message ?? "Failed to update"); }
+                    }}
+                      className="inline-flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg bg-secondary hover:bg-secondary/70">
+                      <Power className="h-3 w-3" /> {u.is_active ? "Deactivate" : "Activate"}
+                    </button>
+                  )}
                 </td>
               </tr>
             ))}
