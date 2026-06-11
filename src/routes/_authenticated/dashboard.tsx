@@ -37,6 +37,8 @@ function Dashboard() {
   const fn = useServerFn(isAdmin ? listAllTickets : listMyTickets);
   const updateFn = useServerFn(updateTicketStatus);
   const insightsFn = useServerFn(getWeeklyInsights);
+  const seedFn = useServerFn(seedSampleTickets);
+  const [seeding, setSeeding] = useState(false);
   const { data, isLoading, refetch } = useQuery({
     queryKey: ["tickets", role, department],
     queryFn: () => fn(),
@@ -56,9 +58,10 @@ function Dashboard() {
 
   const stats = {
     total: tickets.length,
-    HR: tickets.filter(t => t.predicted_category === "HR" || t.department === "HR").length,
-    IT: tickets.filter(t => t.predicted_category === "IT" || t.department === "IT").length,
-    Finance: tickets.filter(t => t.predicted_category === "Finance" || t.department === "Finance").length,
+    HR: tickets.filter(t => t.department === "HR").length,
+    IT: tickets.filter(t => t.department === "IT").length,
+    Finance: tickets.filter(t => t.department === "Finance").length,
+    Operations: tickets.filter(t => t.department === "Operations").length,
     critical: tickets.filter(t => t.priority === "critical").length,
     resolved: tickets.filter(t => t.status === "resolved").length,
     escalated: tickets.filter(t => t.status === "escalated").length,
@@ -68,6 +71,7 @@ function Dashboard() {
     { name: "HR", value: stats.HR },
     { name: "IT", value: stats.IT },
     { name: "Finance", value: stats.Finance },
+    { name: "Operations", value: stats.Operations },
   ];
 
   const sorted = [...tickets].sort((a, b) => {
@@ -83,11 +87,22 @@ function Dashboard() {
     } catch (e: any) { toast.error(e.message); }
   };
 
+  const handleSeed = async () => {
+    setSeeding(true);
+    try {
+      const res = await seedFn();
+      toast.success(`Generated ${res.created} sample tickets`);
+      refetch();
+    } catch (e: any) { toast.error(e.message); }
+    finally { setSeeding(false); }
+  };
+
   const cards = [
     { label: "Total Tickets", value: stats.total, icon: Ticket, color: "text-primary" },
     { label: "HR", value: stats.HR, icon: Users, color: "text-accent-foreground" },
     { label: "IT", value: stats.IT, icon: Cpu, color: "text-primary" },
     { label: "Finance", value: stats.Finance, icon: DollarSign, color: "text-warning" },
+    { label: "Operations", value: stats.Operations, icon: Building2, color: "text-success" },
     { label: "Critical", value: stats.critical, icon: AlertTriangle, color: "text-critical" },
     { label: "Escalated", value: stats.escalated, icon: Wrench, color: "text-warning" },
     { label: "Resolved", value: stats.resolved, icon: CheckCircle2, color: "text-success" },
