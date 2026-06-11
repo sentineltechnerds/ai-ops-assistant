@@ -339,27 +339,32 @@ function AnalyticsPage() {
         {insightsQ.isLoading ? (
           <div className="text-sm text-muted-foreground">Generating insights…</div>
         ) : insights?.empty || !insights || insights.departments.length === 0 ? (
-          <div className="text-sm text-muted-foreground">No insights available yet.</div>
+          <div className="glass rounded-3xl p-8 text-sm text-muted-foreground text-center">
+            Additional ticket activity is required before weekly insights can be generated.
+          </div>
         ) : (
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className={`grid gap-5 ${isDeptAdmin ? "grid-cols-1" : "grid-cols-1 md:grid-cols-2"}`}>
             {insights.departments.map(d => {
               const t = trendIcon(d.wowTrendPct);
               return (
-                <motion.div key={d.department} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="glass rounded-3xl p-5 space-y-3">
+                <motion.div key={d.department} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="glass rounded-3xl p-6 space-y-4 w-full">
                   <div className="flex items-center justify-between">
-                    <div className="font-semibold">{d.department}</div>
+                    <div className="font-semibold text-lg">{d.department}</div>
                     <span className={`text-[11px] font-semibold flex items-center gap-1 ${t.color}`}>
                       <t.Icon className="h-3 w-3" /> {Math.abs(d.wowTrendPct)}% WoW
                     </span>
                   </div>
-                  <div className="grid grid-cols-2 gap-2 text-xs">
-                    <div><div className="text-muted-foreground">Total</div><div className="font-semibold text-base">{d.total}</div></div>
-                    <div><div className="text-muted-foreground">Resolved</div><div className="font-semibold text-base">{d.resolved}</div></div>
-                    <div><div className="text-muted-foreground">Avg Response</div><div className="font-semibold">{fmtMin(d.avgResponseMinutes)}</div></div>
-                    <div><div className="text-muted-foreground">Top Request</div><div className="font-semibold capitalize truncate" title={d.topRequest}>{d.topRequest}</div></div>
+                  <div className="grid grid-cols-2 gap-4 text-xs">
+                    <div><div className="text-muted-foreground uppercase tracking-wider text-[10px]">Total</div><div className="font-semibold text-xl mt-1">{d.total}</div></div>
+                    <div><div className="text-muted-foreground uppercase tracking-wider text-[10px]">Resolved</div><div className="font-semibold text-xl mt-1">{d.resolved}</div></div>
+                    <div><div className="text-muted-foreground uppercase tracking-wider text-[10px]">Avg Response</div><div className="font-semibold text-base mt-1">{fmtMin(d.avgResponseMinutes)}</div></div>
+                    <div className="min-w-0"><div className="text-muted-foreground uppercase tracking-wider text-[10px]">Top Request</div><div className="font-semibold text-base mt-1 capitalize truncate" title={d.topRequest}>{d.topRequest}</div></div>
                   </div>
                   {d.insight && (
-                    <p className="text-xs text-muted-foreground italic leading-relaxed border-t border-border/50 pt-3">"{d.insight}"</p>
+                    <div className="border-t border-border/50 pt-4 space-y-2">
+                      <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Operational Observation & Recommendation</div>
+                      <p className="text-sm leading-relaxed text-foreground/80 break-words">{d.insight}</p>
+                    </div>
                   )}
                 </motion.div>
               );
