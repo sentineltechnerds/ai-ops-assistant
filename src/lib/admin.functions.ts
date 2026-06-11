@@ -88,9 +88,16 @@ export const setUserActive = createServerFn({ method: "POST" })
   }).parse(input))
   .handler(async ({ data, context }) => {
     await assertSuperAdmin(context.supabase, context.userId);
+
+    // Protect Super Admin accounts: they cannot be deactivated.
+    const { data: targetRole } = await supabaseAdmin
+      .from("user_roles").select("role").eq("user_id", data.userId).maybeSingle();
+    if (targetRole?.role === "super_admin" && !data.isActive) {
+      throw new Error("Super Admin accounts cannot be deactivated.");
+    }
+
     const { error } = await supabaseAdmin.from("profiles").update({ is_active: data.isActive }).eq("id", data.userId);
     if (error) throw new Error(error.message);
-    // Also ban/unban auth user
     await supabaseAdmin.auth.admin.updateUserById(data.userId, {
       ban_duration: data.isActive ? "none" : "876000h",
     });
