@@ -194,9 +194,11 @@ function Dashboard() {
                   <select value={t.status} onChange={e => setStatus(t.id, e.target.value)} className={`text-[10px] font-semibold uppercase rounded-full px-2.5 py-1 border-0 ${statusColors[t.status]}`}>
                     <option value="new">New</option><option value="in_progress">In Progress</option><option value="escalated">Escalated</option><option value="resolved">Resolved</option>
                   </select>
-                ) : (
-                  <span className={`text-[10px] font-semibold uppercase tracking-wider px-2.5 py-1 rounded-full ${statusColors[!isAdmin && t.status === "awaiting_review" ? "in_progress" : t.status] ?? ""}`}>{(!isAdmin && t.status === "awaiting_review" ? "in progress" : t.status.replace("_", " "))}</span>
-                )}
+                ) : (() => {
+                  const s = String(t.status);
+                  const eff = !isAdmin && s === "awaiting_review" ? "in_progress" : s;
+                  return <span className={`text-[10px] font-semibold uppercase tracking-wider px-2.5 py-1 rounded-full ${statusColors[eff] ?? ""}`}>{eff.replace("_", " ")}</span>;
+                })()}
               </motion.div>
             ))}
           </div>
