@@ -195,7 +195,7 @@ function Dashboard() {
                     <option value="new">New</option><option value="in_progress">In Progress</option><option value="escalated">Escalated</option><option value="resolved">Resolved</option>
                   </select>
                 ) : (
-                  <span className={`text-[10px] font-semibold uppercase tracking-wider px-2.5 py-1 rounded-full ${statusColors[t.status]}`}>{t.status.replace("_", " ")}</span>
+                  <span className={`text-[10px] font-semibold uppercase tracking-wider px-2.5 py-1 rounded-full ${statusColors[!isAdmin && t.status === "awaiting_review" ? "in_progress" : t.status] ?? ""}`}>{(!isAdmin && t.status === "awaiting_review" ? "in progress" : t.status.replace("_", " "))}</span>
                 )}
               </motion.div>
             ))}
