@@ -86,7 +86,7 @@ function Layout() {
         <div className="p-4 border-b border-border flex items-center justify-between">
           <div className="lg:hidden"><Logo /></div>
           <div className="lg:ml-auto flex items-center gap-3">
-            <NotificationBell />
+            {role === "employee" && <NotificationBell />}
             <button onClick={() => setOpen(!open)} className="lg:hidden p-2 rounded-lg bg-secondary"><Menu className="h-4 w-4" /></button>
           </div>
         </div>
