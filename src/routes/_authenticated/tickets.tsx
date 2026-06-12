@@ -55,8 +55,9 @@ function Tickets() {
         {tickets.length === 0 ? (
           <div className="glass rounded-3xl p-12 text-center text-sm text-muted-foreground">No tickets found.</div>
         ) : tickets.map((t, i) => {
-          const meta = STATUS_META[t.status] ?? STATUS_META.new;
-          const stepIndex = STATUS_FLOW.indexOf(t.status as any);
+          const effStatus = displayStatus(t.status);
+          const meta = STATUS_META[effStatus] ?? STATUS_META.new;
+          const stepIndex = STATUS_FLOW.indexOf(effStatus as any);
           return (
             <motion.div key={t.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03 }}
               className="glass rounded-3xl p-6 hover:shadow-glow transition-shadow">
