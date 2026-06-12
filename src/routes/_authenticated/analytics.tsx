@@ -60,6 +60,7 @@ function AnalyticsPage() {
   const fnInsights = useServerFn(getWeeklyInsights);
   const [range, setRange] = useState<RangeKey>("7d");
   const [deptFilter, setDeptFilter] = useState<"ALL" | Department>("ALL");
+  const [expandedDept, setExpandedDept] = useState<string | null>(null);
 
   const ticketsQ = useQuery({ queryKey: ["analytics-tickets"], queryFn: () => fnTickets() });
   const insightsQ = useQuery({
