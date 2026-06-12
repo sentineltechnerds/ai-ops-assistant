@@ -12,7 +12,8 @@ export const Route = createFileRoute("/_authenticated/tickets")({
   component: Tickets,
 });
 
-const STATUS_FLOW = ["new", "in_progress", "awaiting_review", "escalated", "resolved"] as const;
+const STATUS_FLOW_ADMIN = ["new", "in_progress", "awaiting_review", "escalated", "resolved"] as const;
+const STATUS_FLOW_EMPLOYEE = ["new", "in_progress", "escalated", "resolved"] as const;
 const STATUS_META: Record<string, { label: string; icon: any; color: string }> = {
   new: { label: "New", icon: Sparkles, color: "text-primary bg-primary/15" },
   in_progress: { label: "In Progress", icon: Clock, color: "text-warning bg-warning/15" },
@@ -27,6 +28,10 @@ function Tickets() {
   const fn = useServerFn(isAdmin ? listAllTickets : listMyTickets);
   const { data } = useQuery({ queryKey: ["tickets-history", role], queryFn: () => fn() });
   const [q, setQ] = useState("");
+
+  const STATUS_FLOW = isAdmin ? STATUS_FLOW_ADMIN : STATUS_FLOW_EMPLOYEE;
+  // Employees never see the internal "awaiting_review" stage — collapse it to "in_progress" for display only.
+  const displayStatus = (s: string) => (!isAdmin && s === "awaiting_review" ? "in_progress" : s);
 
   let tickets = data?.tickets ?? [];
   if (role === "department_admin" && department) tickets = tickets.filter(t => t.department === department);
@@ -50,8 +55,9 @@ function Tickets() {
         {tickets.length === 0 ? (
           <div className="glass rounded-3xl p-12 text-center text-sm text-muted-foreground">No tickets found.</div>
         ) : tickets.map((t, i) => {
-          const meta = STATUS_META[t.status] ?? STATUS_META.new;
-          const stepIndex = STATUS_FLOW.indexOf(t.status as any);
+          const effStatus = displayStatus(t.status);
+          const meta = STATUS_META[effStatus] ?? STATUS_META.new;
+          const stepIndex = STATUS_FLOW.indexOf(effStatus as any);
           return (
             <motion.div key={t.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03 }}
               className="glass rounded-3xl p-6 hover:shadow-glow transition-shadow">

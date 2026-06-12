@@ -2,7 +2,8 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useMemo, useState } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
+import { X } from "lucide-react";
 import {
   LineChart, Line, ResponsiveContainer, XAxis, YAxis, Tooltip, CartesianGrid, Legend,
   PieChart, Pie, Cell, BarChart, Bar,
@@ -59,6 +60,7 @@ function AnalyticsPage() {
   const fnInsights = useServerFn(getWeeklyInsights);
   const [range, setRange] = useState<RangeKey>("7d");
   const [deptFilter, setDeptFilter] = useState<"ALL" | Department>("ALL");
+  const [expandedDept, setExpandedDept] = useState<string | null>(null);
 
   const ticketsQ = useQuery({ queryKey: ["analytics-tickets"], queryFn: () => fnTickets() });
   const insightsQ = useQuery({
@@ -335,6 +337,9 @@ function AnalyticsPage() {
         <div className="flex items-center gap-2 mb-4">
           <Sparkles className="h-4 w-4 text-primary" />
           <h3 className="font-semibold">Weekly AI insights</h3>
+          {isSuper && insights && !insights.empty && insights.departments.length > 0 && (
+            <span className="text-[10px] uppercase tracking-wider text-muted-foreground ml-2">Tap a card for details · scroll →</span>
+          )}
         </div>
         {insightsQ.isLoading ? (
           <div className="text-sm text-muted-foreground">Generating insights…</div>
@@ -342,35 +347,125 @@ function AnalyticsPage() {
           <div className="glass rounded-3xl p-8 text-sm text-muted-foreground text-center">
             Additional ticket activity is required before weekly insights can be generated.
           </div>
+        ) : isDeptAdmin ? (
+          // Department admin: single full-width card, expandable
+          (() => {
+            const d = insights.departments[0];
+            if (!d) return null;
+            const t = trendIcon(d.wowTrendPct);
+            const open = expandedDept === d.department;
+            return (
+              <motion.button
+                type="button"
+                onClick={() => setExpandedDept(open ? null : d.department)}
+                initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+                className="glass rounded-3xl p-6 space-y-4 w-full text-left hover:shadow-glow transition-shadow"
+              >
+                <div className="flex items-center justify-between">
+                  <div className="font-semibold text-lg">{d.department}</div>
+                  <span className={`text-[11px] font-semibold flex items-center gap-1 ${t.color}`}>
+                    <t.Icon className="h-3 w-3" /> {Math.abs(d.wowTrendPct)}% WoW
+                  </span>
+                </div>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-xs">
+                  <div><div className="text-muted-foreground uppercase tracking-wider text-[10px]">Total</div><div className="font-semibold text-xl mt-1">{d.total}</div></div>
+                  <div><div className="text-muted-foreground uppercase tracking-wider text-[10px]">Resolved</div><div className="font-semibold text-xl mt-1">{d.resolved}</div></div>
+                  <div><div className="text-muted-foreground uppercase tracking-wider text-[10px]">Avg Response</div><div className="font-semibold text-base mt-1">{fmtMin(d.avgResponseMinutes)}</div></div>
+                  <div className="min-w-0"><div className="text-muted-foreground uppercase tracking-wider text-[10px]">Top Request</div><div className="font-semibold text-base mt-1 capitalize truncate" title={d.topRequest}>{d.topRequest}</div></div>
+                </div>
+                {open && d.insight && (
+                  <div className="border-t border-border/50 pt-4 space-y-2">
+                    <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Operational Observation & AI Recommendation</div>
+                    <p className="text-sm leading-relaxed text-foreground/80 break-words whitespace-pre-line">{d.insight}</p>
+                  </div>
+                )}
+                {!open && d.insight && (
+                  <div className="text-[11px] text-primary font-medium">Show observation & recommendation →</div>
+                )}
+              </motion.button>
+            );
+          })()
         ) : (
-          <div className={`grid gap-5 ${isDeptAdmin ? "grid-cols-1" : "grid-cols-1 md:grid-cols-2"}`}>
+          // Super admin: horizontal scroll row of department insight cards
+          <div className="flex gap-4 overflow-x-auto pb-3 snap-x snap-mandatory -mx-2 px-2">
             {insights.departments.map(d => {
               const t = trendIcon(d.wowTrendPct);
               return (
-                <motion.div key={d.department} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="glass rounded-3xl p-6 space-y-4 w-full">
+                <motion.button
+                  type="button"
+                  key={d.department}
+                  onClick={() => setExpandedDept(d.department)}
+                  initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+                  className="glass rounded-3xl p-6 space-y-4 text-left flex-shrink-0 w-[280px] md:w-[320px] snap-start hover:shadow-glow transition-shadow"
+                >
                   <div className="flex items-center justify-between">
                     <div className="font-semibold text-lg">{d.department}</div>
                     <span className={`text-[11px] font-semibold flex items-center gap-1 ${t.color}`}>
                       <t.Icon className="h-3 w-3" /> {Math.abs(d.wowTrendPct)}% WoW
                     </span>
                   </div>
-                  <div className="grid grid-cols-2 gap-4 text-xs">
+                  <div className="grid grid-cols-2 gap-3 text-xs">
                     <div><div className="text-muted-foreground uppercase tracking-wider text-[10px]">Total</div><div className="font-semibold text-xl mt-1">{d.total}</div></div>
                     <div><div className="text-muted-foreground uppercase tracking-wider text-[10px]">Resolved</div><div className="font-semibold text-xl mt-1">{d.resolved}</div></div>
-                    <div><div className="text-muted-foreground uppercase tracking-wider text-[10px]">Avg Response</div><div className="font-semibold text-base mt-1">{fmtMin(d.avgResponseMinutes)}</div></div>
-                    <div className="min-w-0"><div className="text-muted-foreground uppercase tracking-wider text-[10px]">Top Request</div><div className="font-semibold text-base mt-1 capitalize truncate" title={d.topRequest}>{d.topRequest}</div></div>
+                    <div><div className="text-muted-foreground uppercase tracking-wider text-[10px]">Avg Response</div><div className="font-semibold text-sm mt-1">{fmtMin(d.avgResponseMinutes)}</div></div>
+                    <div className="min-w-0"><div className="text-muted-foreground uppercase tracking-wider text-[10px]">Top Request</div><div className="font-semibold text-sm mt-1 capitalize truncate" title={d.topRequest}>{d.topRequest}</div></div>
                   </div>
-                  {d.insight && (
-                    <div className="border-t border-border/50 pt-4 space-y-2">
-                      <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Operational Observation & Recommendation</div>
-                      <p className="text-sm leading-relaxed text-foreground/80 break-words">{d.insight}</p>
-                    </div>
-                  )}
-                </motion.div>
+                  <div className="text-[11px] text-primary font-medium">Open details →</div>
+                </motion.button>
               );
             })}
           </div>
         )}
+
+        {/* Expanded detail modal (super admin) */}
+        <AnimatePresence>
+          {isSuper && expandedDept && (() => {
+            const d = insights?.departments.find(x => x.department === expandedDept);
+            if (!d) return null;
+            const t = trendIcon(d.wowTrendPct);
+            return (
+              <motion.div
+                initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                className="fixed inset-0 z-50 bg-background/70 backdrop-blur-sm flex items-center justify-center p-4"
+                onClick={() => setExpandedDept(null)}
+              >
+                <motion.div
+                  initial={{ opacity: 0, y: 20, scale: 0.96 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 20, scale: 0.96 }}
+                  onClick={e => e.stopPropagation()}
+                  className="glass rounded-3xl p-8 max-w-2xl w-full max-h-[85vh] overflow-y-auto space-y-5 shadow-glow"
+                >
+                  <div className="flex items-start justify-between gap-4">
+                    <div>
+                      <div className="text-[10px] uppercase tracking-wider text-muted-foreground">Weekly insight</div>
+                      <h2 className="font-display text-2xl font-bold mt-1">{d.department}</h2>
+                    </div>
+                    <button onClick={() => setExpandedDept(null)} className="p-2 rounded-xl hover:bg-secondary/50 transition" aria-label="Close">
+                      <X className="h-4 w-4" />
+                    </button>
+                  </div>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-xs">
+                    <div><div className="text-muted-foreground uppercase tracking-wider text-[10px]">Total</div><div className="font-semibold text-2xl mt-1">{d.total}</div></div>
+                    <div><div className="text-muted-foreground uppercase tracking-wider text-[10px]">Resolved</div><div className="font-semibold text-2xl mt-1">{d.resolved}</div></div>
+                    <div><div className="text-muted-foreground uppercase tracking-wider text-[10px]">Avg Response</div><div className="font-semibold text-base mt-1">{fmtMin(d.avgResponseMinutes)}</div></div>
+                    <div className="min-w-0"><div className="text-muted-foreground uppercase tracking-wider text-[10px]">Top Request</div><div className="font-semibold text-base mt-1 capitalize truncate" title={d.topRequest}>{d.topRequest}</div></div>
+                  </div>
+                  <div className="border-t border-border/50 pt-4">
+                    <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Trend Analysis</div>
+                    <div className={`mt-1 text-sm font-semibold flex items-center gap-1 ${t.color}`}>
+                      <t.Icon className="h-4 w-4" /> {Math.abs(d.wowTrendPct)}% week-over-week
+                    </div>
+                  </div>
+                  {d.insight && (
+                    <div className="border-t border-border/50 pt-4 space-y-2">
+                      <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Operational Observation & AI Recommendation</div>
+                      <p className="text-sm leading-relaxed text-foreground/80 break-words whitespace-pre-line">{d.insight}</p>
+                    </div>
+                  )}
+                </motion.div>
+              </motion.div>
+            );
+          })()}
+        </AnimatePresence>
       </div>
     </div>
   );
