@@ -1,6 +1,6 @@
 import { createFileRoute, Outlet, Link, useNavigate, useLocation } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { LayoutDashboard, PlusCircle, History, ListChecks, LogOut, Menu, Users, Shield, BarChart3 } from "lucide-react";
+import { LayoutDashboard, PlusCircle, History, ListChecks, LogOut, Menu, Users, Shield, BarChart3, FileText } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import { Logo } from "@/components/Logo";
 import { NotificationBell } from "@/components/NotificationBell";
@@ -40,6 +40,7 @@ function Layout() {
     baseNav.push(
       { to: "/dashboard", icon: Shield, label: "Command Center" },
       { to: "/analytics", icon: BarChart3, label: "Analytics" },
+      { to: "/reports", icon: FileText, label: "Reports" },
       { to: "/users", icon: Users, label: "User Management" },
       { to: "/tickets", icon: History, label: "All Tickets" },
     );
@@ -47,6 +48,7 @@ function Layout() {
     baseNav.push(
       { to: "/queue", icon: ListChecks, label: "Department Queue" },
       { to: "/analytics", icon: BarChart3, label: "Analytics" },
+      { to: "/reports", icon: FileText, label: "Reports" },
       { to: "/tickets", icon: History, label: "Ticket History" },
     );
   } else {
